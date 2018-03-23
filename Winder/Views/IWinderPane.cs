@@ -8,5 +8,6 @@ namespace Winder.Views
 {
 	public interface IWinderPane
 	{
+		string Name { get; }
 	}
 }

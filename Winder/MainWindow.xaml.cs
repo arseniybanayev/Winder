@@ -106,41 +106,49 @@ namespace Winder
 			}
 		}
 
-		private IReadOnlyDictionary<int, IReadOnlyList<FileSystemItemViewModel>> GetGroupedCurrentlySelectedItems() {
-			return _panes.ToDictionary(
-				(p, i) => i,
-				(p, i) => ((p as DirectoryListingPane)
-						?.SelectedItems.Cast<FileSystemItemViewModel>()
-						?? Enumerable.Empty<FileSystemItemViewModel>())
-					.ToReadOnlyList());
+		private void PopTo(int indexOfPaneToLeave) {
+			for (var i = _panes.Count - 1; i > indexOfPaneToLeave; i--)
+				PopPane();
+			Title = _panes[indexOfPaneToLeave].Name;
 		}
 
-		private IReadOnlyList<FileSystemItemViewModel> GetCurrentlySelectedItems() {
-			return GetGroupedCurrentlySelectedItems().SelectMany(kv => kv.Value).ToList();
+		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetDeepestSelection() {
+			for (var i = _panes.Count - 1; i >= 0; i--) {
+				if (!(_panes[i] is DirectoryListingPane directory))
+					continue;
+				if (directory.SelectedItems.Count == 0)
+					continue;
+				return Tuple.Create(i, directory.SelectedItems.Cast<FileSystemItemViewModel>().ToReadOnlyList());
+			}
+
+			return Tuple.Create(-1, Enumerable.Empty<FileSystemItemViewModel>().ToReadOnlyList());
+		}
+
+		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetLatestSelection(object sender) {
+			if (!(sender is DirectoryListingPane directory))
+				return Tuple.Create(-1, Enumerable.Empty<FileSystemItemViewModel>().ToReadOnlyList());
+			return Tuple.Create(_panes.IndexOf(directory), directory.SelectedItems.Cast<FileSystemItemViewModel>().ToReadOnlyList());
 		}
 
 		private void DirectoryListingPane_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			var currentlySelected = GetGroupedCurrentlySelectedItems();
-			var totalSelectedItems = currentlySelected.Values.Sum(v => v.Count);
-			if (totalSelectedItems == 1) {
-				var indexOfPaneContainingSelection = currentlySelected.Single(p => p.Value.Count == 1).Key;
-				//var indexOfNextPane = indexOfPaneContainingSelection + 1; // TODO this optimization
+			var latestSelection = GetLatestSelection(sender);
+			if (latestSelection.Item1 == -1) {
+				// Return to first pane
+				PopTo(0);
+				return;
+			}
 
-				// Clear all the list boxes after indexOfPaneContainingSelection // TODO indexOfNextPane
-				for (var i = _panes.Count - 1; i > indexOfPaneContainingSelection; i--)
-					PopPane();
-
-				// Open a new list box or update the existing list box at indexOfNextPane
-				PushPane(currentlySelected.Single(p => p.Value.Count == 1).Value.Single());
-			} else {
-				// Close any open pane to the right
-				for (var i = _panes.Count - 1; i > 0; i--)
-					PopPane();
+			// Remove panes to the right of the pane containing the deepest selection
+			PopTo(latestSelection.Item1);
+			
+			if (latestSelection.Item2.Count == 1) {
+				// Show a new pane for the selected item
+				PushPane(latestSelection.Item2.Single());
 			}
 		}
 
 		private void OpenCurrentlySelectedFiles() {
-			foreach (var file in GetCurrentlySelectedItems())
+			foreach (var file in GetDeepestSelection().Item2)
 				Process.Start(file.SourceUntyped.FullName);
 		}
 

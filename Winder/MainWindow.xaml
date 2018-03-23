@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Winder"
         mc:Ignorable="d"
 		Loaded="Window_Loaded"
-        Title="MainWindow" Height="475" Width="950">
+        Title="Winder" Height="475" Width="950">
 	<Window.Resources>
 		<!-- Used for the list box item selection. Looks like Finder -->
 		<Style TargetType="{x:Type ListBoxItem}">
