@@ -7,7 +7,27 @@
         mc:Ignorable="d"
 		Loaded="Window_Loaded"
         Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        
-    </Grid>
+	<Window.Style>
+		<!-- These are the font family and size traditionally used in Finder -->
+		<Style TargetType="{x:Type Window}">
+			<Setter Property="FontFamily" Value="Helvetica" />
+			<Setter Property="FontSize" Value="13" />
+		</Style>
+	</Window.Style>
+	<Grid Margin="10">
+		<ListBox Name="ListBoxFiles" SelectionMode="Extended" HorizontalContentAlignment="Stretch">
+			<ListBox.ItemTemplate>
+				<DataTemplate>
+					<Grid Margin="0,2">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="75" />
+						</Grid.ColumnDefinitions>
+						<TextBlock Text="{Binding Name}" Grid.Column="0" />
+						<TextBlock Text="{Binding IsDirectory}" Grid.Column="1" />
+					</Grid>
+				</DataTemplate>
+			</ListBox.ItemTemplate>
+		</ListBox>
+	</Grid>
 </Window>
