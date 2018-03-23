@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Interop;
 
 namespace Winder
 {
@@ -26,34 +26,33 @@ namespace Winder
 
 			// TODO: Make a model? Controller?
 			_currentDirectory = new DirectoryInfo(@"C:\Users\arsen\Sheet Music");
-			ListBoxFiles.ItemsSource = _currentDirectory.GetFileSystemInfos()
+			ListBox_Files.ItemsSource = _currentDirectory.GetFileSystemInfos()
 				.Select(FileSystemInfoExtended.Create);
 
 			// Called when anything changes about the selection
-			ListBoxFiles.SelectionChanged += ListBoxFiles_SelectionChanged;
+			ListBox_Files.SelectionChanged += ListBox_Files_SelectionChanged;
 		}
 
-		private void ListBoxFiles_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+		private void ListBox_Files_SelectionChanged(object sender, SelectionChangedEventArgs e) {
 			Console.WriteLine("Selected changed");
 		}
 
-		#region Disable the default Window buttons (close, minimize)
-		
-		private const int GWL_STYLE = -16;
-		private const int WS_SYSMENU = 0x80000;
-
-		[DllImport("user32.dll", SetLastError = true)]
-		private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
-
-		[DllImport("user32.dll")]
-		private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
-
 		private void Window_Loaded(object sender, RoutedEventArgs e) {
-			var hwnd = new WindowInteropHelper(this).Handle;
-			SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
+			WindowsInterop.HideWindowButtons(this);
 		}
 
-		#endregion
+		private void OpenCurrentlySelectedFiles() {
+			foreach (var file in ListBox_Files.SelectedItems.Cast<FileSystemInfoExtended>())
+				Process.Start(file.SourceUntyped.FullName);
+		}
 
+		private void ListBox_Files_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e) {
+			OpenCurrentlySelectedFiles();
+		}
+
+		private void ListBox_Files_KeyDown(object sender, System.Windows.Input.KeyEventArgs e) {
+			if (e.Key == System.Windows.Input.Key.Enter)
+				OpenCurrentlySelectedFiles();
+		}
 	}
 }

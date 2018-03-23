@@ -4,6 +4,6 @@
              xmlns:local="clr-namespace:Winder"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
-    </Application.Resources>
+		<BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+	</Application.Resources>
 </Application>
