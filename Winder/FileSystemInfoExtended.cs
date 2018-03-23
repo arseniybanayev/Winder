@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Windows;
 using System.Windows.Media;
 
 namespace Winder
@@ -28,6 +31,7 @@ namespace Winder
 		public string NameWithoutExtension => Path.GetFileNameWithoutExtension(SourceUntyped.FullName);
 
 		public abstract bool IsDirectory { get; }
+		public Visibility VisibleIfDirectory => IsDirectory ? Visibility.Visible : Visibility.Hidden;
 
 		public ImageSource IconImage => _iconImage.Value;
 
@@ -36,15 +40,19 @@ namespace Winder
 
 	public class DirectoryInfoExtended : FileSystemInfoExtended
 	{
+		public DirectoryInfoExtended(string path) : this(new DirectoryInfo(path)) { }
 		public DirectoryInfoExtended(DirectoryInfo source) : base(source) { }
 
 		public DirectoryInfo Source => (DirectoryInfo)SourceUntyped;
 
 		public override bool IsDirectory => true;
+
+		internal IEnumerable<FileSystemInfoExtended> GetChildren() => Source.GetFileSystemInfos().Select(FileSystemInfoExtended.Create);
 	}
 
 	public class FileInfoExtended : FileSystemInfoExtended
 	{
+		public FileInfoExtended(string path) : this(new FileInfo(path)) { }
 		public FileInfoExtended(FileInfo source) : base(source) { }
 
 		public FileInfo Source => (FileInfo)SourceUntyped;

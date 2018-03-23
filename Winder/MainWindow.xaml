@@ -8,6 +8,7 @@
 		Loaded="Window_Loaded"
         Title="MainWindow" Height="350" Width="300">
 	<Window.Resources>
+		<!-- Used for the list box item selection. Looks like Finder -->
 		<Style TargetType="{x:Type ListBoxItem}">
 			<Setter Property="FocusVisualStyle" Value="{x:Null}"/>
 			<Setter Property="Background" Value="Transparent"/>
@@ -41,7 +42,6 @@
 				</Setter.Value>
 			</Setter>
 		</Style>
-		<BitmapImage x:Key="DirectoryOpenIcon" UriSource="Resources/DirectoryOpenIcon.png" />
 	</Window.Resources>
 	<Window.Style>
 		<!-- These are the font family and size traditionally used in Finder -->
@@ -54,34 +54,5 @@
 		<Grid.ColumnDefinitions>
 			<ColumnDefinition Width="*" />
 		</Grid.ColumnDefinitions>
-		<ListBox Name="ListBox_Files"
-				 SelectionMode="Extended"
-				 HorizontalContentAlignment="Stretch"
-				 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-				 MouseDoubleClick="ListBox_Files_MouseDoubleClick"
-				 KeyDown="ListBox_Files_KeyDown"
-				 Grid.Column="0">
-			<ListBox.ItemTemplate>
-				<DataTemplate>
-					<Grid Margin="0,2">
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="20" />
-							<ColumnDefinition Width="*" />
-							<ColumnDefinition Width="20" />
-						</Grid.ColumnDefinitions>
-						<Image Source="{Binding IconImage}"
-							   Width="16" Height="16"
-							   Grid.Column="0" />
-						<TextBlock Text="{Binding NameWithoutExtension}"
-								   TextTrimming="CharacterEllipsis" Margin="8,0,8,0"
-								   Grid.Column="1" />
-						<Image Source="{StaticResource DirectoryOpenIcon}"
-							   Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVisibility}}"
-							   Width="10" Height="10"
-							   Grid.Column="2" />
-					</Grid>
-				</DataTemplate>
-			</ListBox.ItemTemplate>
-		</ListBox>
 	</Grid>
 </Window>
