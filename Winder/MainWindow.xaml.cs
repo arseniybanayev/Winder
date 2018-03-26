@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Windows.Input;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using Winder.ViewModels;
 using Winder.Views;
+using System.Threading.Tasks;
 
 namespace Winder
 {
@@ -44,6 +45,7 @@ namespace Winder
 
 				// Subscribe to events
 				directoryPane.MouseDoubleClick += DirectoryListingPane_MouseDoubleClick;
+				directoryPane.PreviewKeyDown += DirectoryListingPane_PreviewKeyDown;
 				directoryPane.KeyDown += DirectoryListingPane_KeyDown;
 				directoryPane.SelectionChanged += DirectoryListingPane_SelectionChanged;
 
@@ -87,6 +89,7 @@ namespace Winder
 			if (pane is DirectoryListingPane directoryPane) {
 				// Unsubscribe from events
 				directoryPane.MouseDoubleClick -= DirectoryListingPane_MouseDoubleClick;
+				directoryPane.PreviewKeyDown -= DirectoryListingPane_PreviewKeyDown;
 				directoryPane.KeyDown -= DirectoryListingPane_KeyDown;
 				directoryPane.SelectionChanged -= DirectoryListingPane_SelectionChanged;
 			} else if (pane is FilePreviewPane filePane) {
@@ -106,10 +109,10 @@ namespace Winder
 			}
 		}
 
-		private void PopTo(int indexOfPaneToLeave) {
-			for (var i = _panes.Count - 1; i > indexOfPaneToLeave; i--)
+		private void PopTo(int targetPaneIndex) {
+			for (var i = _panes.Count - 1; i > targetPaneIndex; i--)
 				PopPane();
-			Title = _panes[indexOfPaneToLeave].Name;
+			Title = _panes[targetPaneIndex].Name;
 		}
 
 		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetDeepestSelection() {
@@ -147,18 +150,48 @@ namespace Winder
 			}
 		}
 
-		private void OpenCurrentlySelectedFiles() {
+		private void OpenDeepestSelection() {
 			foreach (var file in GetDeepestSelection().Item2)
 				Process.Start(file.SourceUntyped.FullName);
 		}
 
-		private void DirectoryListingPane_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e) {
-			OpenCurrentlySelectedFiles();
+		private void DirectoryListingPane_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
+			OpenDeepestSelection();
 		}
 
-		private void DirectoryListingPane_KeyDown(object sender, System.Windows.Input.KeyEventArgs e) {
-			if (e.Key == System.Windows.Input.Key.Enter)
-				OpenCurrentlySelectedFiles();
+		private void DirectoryListingPane_PreviewKeyDown(object sender, KeyEventArgs e) {
+			var pane = sender;
+		}
+
+		private void DirectoryListingPane_KeyDown(object sender, KeyEventArgs e) {
+			var pane = (DirectoryListingPane)sender;
+			switch (e.Key) {
+				case Key.Enter:
+					// Enter is a shortcut for double-clicking the mouse
+					OpenDeepestSelection();
+					break;
+				case Key.Left:
+					if (_panes.IndexOf(pane) == 0)
+						break;
+					// If it's not the root pane, deselect everything (which should close deeper panes)
+					// and focus on the selected item in the previous pane
+					pane.SelectItem(-1);
+					var previousPane = (DirectoryListingPane)_panes[_panes.IndexOf(pane) - 1];
+					previousPane.FocusSelectedItem();
+					break;
+				case Key.Right:
+					if (pane.SelectedItem is FileViewModel) {
+						if (pane.SelectedIndex < pane.Items.Count - 1)
+							pane.SelectItemAndFocus(pane.SelectedIndex + 1);
+					} else {
+						// Go into the next pane, which is guaranteed to be open
+						// bc the selected file system item in this pane is a directory
+						var nextPane = (DirectoryListingPane)_panes[_panes.IndexOf(pane) + 1];
+						if (nextPane.Items.Count > 0)
+							nextPane.SelectItemAndFocus(0);
+					}
+					break;
+			}
 		}
 	}
 }
