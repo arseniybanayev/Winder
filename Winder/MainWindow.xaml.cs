@@ -45,7 +45,7 @@ namespace Winder
 
 			// Set column position in the main grid
 			GridMain.ColumnDefinitions.Add(new ColumnDefinition {
-				Width = new GridLength(300, GridUnitType.Pixel) // Panes' widths are in pixels, but resizable
+				Width = new GridLength(180, GridUnitType.Pixel) // Panes' widths are in pixels, but resizable
 			});
 			Grid.SetColumn(pane, GridMain.ColumnDefinitions.Count - 1);
 			GridMain.Children.Add(pane); // Add to main grid
