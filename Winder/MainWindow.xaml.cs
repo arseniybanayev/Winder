@@ -131,7 +131,6 @@ namespace Winder
 		private void PopTo(int targetPaneIndex) {
 			for (var i = _panes.Count - 1; i > targetPaneIndex; i--)
 				PopFileSystemPane();
-			Title = _panes[targetPaneIndex].Name;
 		}
 
 		#endregion

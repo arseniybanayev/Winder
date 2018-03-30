@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
@@ -9,8 +8,6 @@ namespace Winder.Views
 {
 	public class DirectoryListingPane : ListBox, IFileSystemPane
 	{
-		public string Name { get; }
-
 		public DirectoryListingPane(DirectoryViewModel directory) {
 			// Basic display and interactivity settings
 			SelectionMode = SelectionMode.Extended;
@@ -20,11 +17,10 @@ namespace Winder.Views
 
 			// Items come from the supplied view model
 			ItemsSource = directory.Children;
-			Name = directory.NameWithoutExtension;
 
 			// Template for items
 			var itemTemplate = XamlReader.Load(
-				new FileStream("Resources/DirectoryListBoxItemTemplate.xaml", FileMode.Open)
+				new FileStream("Resources/DirectoryListingItemTemplate.xaml", FileMode.Open)
 				) as DataTemplate;
 			ItemTemplate = itemTemplate;
 		}

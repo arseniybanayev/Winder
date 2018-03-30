@@ -51,5 +51,5 @@
 			<Setter Property="FontSize" Value="13" />
 		</Style>
 	</Window.Style>
-	<Grid Name="GridMain" Margin="10" />
+	<Grid Name="GridMain" Margin="0,0,10,0" />
 </Window>
