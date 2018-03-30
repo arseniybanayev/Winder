@@ -4,7 +4,7 @@ using Winder.ViewModels;
 
 namespace Winder.Views
 {
-	public class FilePreviewPane : Image, IWinderPane
+	public class FilePreviewPane : Image, IFileSystemPane
 	{
 		public string Name { get; }
 
@@ -12,7 +12,7 @@ namespace Winder.Views
 			// Basic display and interactivity settings
 			HorizontalAlignment = HorizontalAlignment.Left; // within the column it occupies in GridMain
 			SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
-			
+
 			Source = file.LargeImage;
 			Name = file.NameWithoutExtension;
 		}

@@ -54,11 +54,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Favorites.cs" />
     <Compile Include="ViewModels\DirectoryViewModel.cs" />
     <Compile Include="ViewModels\FileViewModel.cs" />
     <Compile Include="Views\DirectoryListingPane.cs" />
+    <Compile Include="Views\FavoritesPane.cs" />
     <Compile Include="Views\FilePreviewPane.cs" />
-    <Compile Include="Views\IWinderPane.cs" />
+    <Compile Include="Views\IFileSystemPane.cs" />
     <Content Include="Resources\DirectoryListBoxItemTemplate.xaml">
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

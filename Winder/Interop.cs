@@ -22,8 +22,7 @@ namespace Winder
 		[DllImport("user32.dll")]
 		private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
-		internal static void HideWindowButtons(Window window)
-		{
+		internal static void HideWindowButtons(Window window) {
 			var hwnd = new WindowInteropHelper(window).Handle;
 			SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
 		}
@@ -87,8 +86,7 @@ namespace Winder
 		[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
 		private struct SHFILEINFO
 		{
-			public SHFILEINFO(bool b)
-			{
+			public SHFILEINFO(bool b) {
 				hIcon = IntPtr.Zero;
 				iIcon = 0;
 				dwAttributes = 0;

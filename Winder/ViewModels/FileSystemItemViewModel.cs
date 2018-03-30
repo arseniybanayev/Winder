@@ -23,6 +23,11 @@ namespace Winder.ViewModels
 
 		public string Name => SourceUntyped.Name;
 
+		/// <summary>
+		/// Gets the full path of the directory or file.
+		/// </summary>
+		public string FullName => SourceUntyped.FullName;
+
 		public string NameWithoutExtension => Path.GetFileNameWithoutExtension(SourceUntyped.FullName);
 
 		public abstract bool IsDirectory { get; }

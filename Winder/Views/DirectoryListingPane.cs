@@ -7,7 +7,7 @@ using Winder.ViewModels;
 
 namespace Winder.Views
 {
-	public class DirectoryListingPane : ListBox, IWinderPane
+	public class DirectoryListingPane : ListBox, IFileSystemPane
 	{
 		public string Name { get; }
 
