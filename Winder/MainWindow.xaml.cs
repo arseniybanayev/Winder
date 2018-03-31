@@ -18,10 +18,6 @@ namespace Winder
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		private void Window_Loaded(object sender, RoutedEventArgs e) {
-			WindowsInterop.HideWindowButtons(this);
-		}
-
 		public MainWindow() {
 			InitializeComponent(); // Always needs to happen first
 
@@ -162,18 +158,6 @@ namespace Winder
 
 		#region Selection
 
-		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetDeepestSelection() {
-			for (var i = _panes.Count - 1; i >= 0; i--) {
-				if (!(_panes[i] is DirectoryListingPane directory))
-					continue;
-				if (directory.SelectedItems.Count == 0)
-					continue;
-				return Tuple.Create(i, directory.SelectedItems.Cast<FileSystemItemViewModel>().ToReadOnlyList());
-			}
-
-			return Tuple.Create(-1, Enumerable.Empty<FileSystemItemViewModel>().ToReadOnlyList());
-		}
-
 		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetLatestSelectedFiles(DirectoryListingPane directory) {
 			return Tuple.Create(_panes.IndexOf(directory), directory.SelectedItems.Cast<FileSystemItemViewModel>().ToReadOnlyList());
 		}
@@ -193,10 +177,21 @@ namespace Winder
 			else
 				SetTitle(_panes[0].FileSystemItemName);
 
-			if (latestSelection.Item2.Count == 1) {
-				// Show a new pane for the selected item
+			// Show a new pane for the selected item, if there is one
+			if (latestSelection.Item2.Count == 1)
 				PushFileSystemPane(latestSelection.Item2.Single());
+		}
+
+		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetDeepestSelection() {
+			for (var i = _panes.Count - 1; i >= 0; i--) {
+				if (!(_panes[i] is DirectoryListingPane directory))
+					continue;
+				if (directory.SelectedItems.Count == 0)
+					continue;
+				return Tuple.Create(i, directory.SelectedItems.Cast<FileSystemItemViewModel>().ToReadOnlyList());
 			}
+
+			return Tuple.Create(-1, Enumerable.Empty<FileSystemItemViewModel>().ToReadOnlyList());
 		}
 
 		private void OpenDeepestSelection() {

@@ -9,26 +9,6 @@ namespace Winder
 {
 	public static class WindowsInterop
 	{
-		#region Hiding Window buttons (close, minimize)
-
-		// from https://stackoverflow.com/a/958980
-
-		private const int GWL_STYLE = -16;
-		private const int WS_SYSMENU = 0x80000;
-
-		[DllImport("user32.dll", SetLastError = true)]
-		private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
-
-		[DllImport("user32.dll")]
-		private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
-
-		internal static void HideWindowButtons(Window window) {
-			var hwnd = new WindowInteropHelper(window).Handle;
-			SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
-		}
-
-		#endregion
-
 		#region Converting icon to image source
 
 		// from https://stackoverflow.com/a/29819585
