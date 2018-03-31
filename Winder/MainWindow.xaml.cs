@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using Winder.ViewModels;
 using Winder.Views;
 using Winder.Properties;
+using System.Windows.Media;
 
 namespace Winder
 {
@@ -29,6 +30,9 @@ namespace Winder
 				DefaultValue = FindResource(typeof(Window))
 			});
 
+			// Background color and other UI adjustments
+			Background = new SolidColorBrush(Color.FromRgb(246, 246, 246));
+
 			// Add a favorites directory
 			var favorites = Favorites.Load();
 			AddFavoritesPane(favorites);
@@ -36,6 +40,12 @@ namespace Winder
 			// Set up the opening directory
 			_currentItem = FileSystemItemViewModel.Create(new DirectoryInfo(Settings.Default.NewWindowPath));
 			PushFileSystemPane(_currentItem);
+		}
+		
+		private void SetTitle(string titleSuffix) {
+			TextBlockTitle.Text = string.IsNullOrWhiteSpace(titleSuffix)
+				? "Winder"
+				: $"{titleSuffix}";
 		}
 
 		#region Favorites Pane
@@ -74,6 +84,8 @@ namespace Winder
 				directoryPane.SelectionChanged += DirectoryListingPane_SelectionChanged;
 
 				pane = directoryPane;
+
+				
 			} else if (item is FileViewModel file) {
 				// Open file preview pane
 				pane = new FilePreviewPane(file);
@@ -124,15 +136,7 @@ namespace Winder
 				GridMain.Children.RemoveAt(GridMain.Children.Count - 1);
 			}
 		}
-
-		/// <summary>
-		/// Removes file system panes until the deepest is `targetPaneIndex`
-		/// </summary>
-		private void PopTo(int targetPaneIndex) {
-			for (var i = _panes.Count - 1; i > targetPaneIndex; i--)
-				PopFileSystemPane();
-		}
-
+		
 		#endregion
 
 		#region GridSplitters
@@ -170,23 +174,25 @@ namespace Winder
 			return Tuple.Create(-1, Enumerable.Empty<FileSystemItemViewModel>().ToReadOnlyList());
 		}
 
-		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetLatestSelection(object sender) {
-			if (!(sender is DirectoryListingPane directory))
-				return Tuple.Create(-1, Enumerable.Empty<FileSystemItemViewModel>().ToReadOnlyList());
+		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetLatestSelectedFiles(DirectoryListingPane directory) {
 			return Tuple.Create(_panes.IndexOf(directory), directory.SelectedItems.Cast<FileSystemItemViewModel>().ToReadOnlyList());
 		}
 
 		private void DirectoryListingPane_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			var latestSelection = GetLatestSelection(sender);
-			if (latestSelection.Item1 == -1) {
-				// Return to first pane
-				PopTo(0);
-				return;
-			}
+			var latestSelection = GetLatestSelectedFiles((DirectoryListingPane)sender);
 
-			// Remove panes to the right of the pane containing the deepest selection
-			PopTo(latestSelection.Item1);
-			
+			// Remove panes to the right of the pane containing the latest selection
+			for (var i = _panes.Count - 1; i > latestSelection.Item1; i--)
+				PopFileSystemPane();
+
+			// Update the window title
+			if (latestSelection.Item2.Count > 0)
+				SetTitle(_panes[latestSelection.Item1].FileSystemItemName);
+			else if (latestSelection.Item1 > 0)
+				SetTitle(_panes[latestSelection.Item1 - 1].FileSystemItemName);
+			else
+				SetTitle(_panes[0].FileSystemItemName);
+
 			if (latestSelection.Item2.Count == 1) {
 				// Show a new pane for the selected item
 				PushFileSystemPane(latestSelection.Item2.Single());

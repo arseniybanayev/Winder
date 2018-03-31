@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
+using System.Windows.Media;
 
 namespace Winder.Views
 {
@@ -13,6 +14,8 @@ namespace Winder.Views
 			HorizontalAlignment = HorizontalAlignment.Stretch; // within the column it occupies in GridMain
 			HorizontalContentAlignment = HorizontalAlignment.Stretch; // the items inside the ListBox
 			SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
+			BorderThickness = new Thickness(0);
+			Background = new SolidColorBrush(Color.FromRgb(246, 246, 246));
 
 			ItemsSource = favorites.Children;
 

@@ -2,6 +2,6 @@
 {
 	public interface IFileSystemPane
 	{
-		string Name { get; }
+		string FileSystemItemName { get; }
 	}
 }

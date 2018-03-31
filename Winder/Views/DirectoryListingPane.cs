@@ -8,6 +8,8 @@ namespace Winder.Views
 {
 	public class DirectoryListingPane : ListBox, IFileSystemPane
 	{
+		private readonly DirectoryViewModel _directoryViewModel;
+
 		public DirectoryListingPane(DirectoryViewModel directory) {
 			// Basic display and interactivity settings
 			SelectionMode = SelectionMode.Extended;
@@ -16,7 +18,8 @@ namespace Winder.Views
 			SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
 
 			// Items come from the supplied view model
-			ItemsSource = directory.Children;
+			_directoryViewModel = directory;
+			ItemsSource = _directoryViewModel.Children;
 
 			// Template for items
 			var itemTemplate = XamlReader.Load(
@@ -24,6 +27,8 @@ namespace Winder.Views
 				) as DataTemplate;
 			ItemTemplate = itemTemplate;
 		}
+
+		public string FileSystemItemName => _directoryViewModel.Name;
 
 		internal void SelectItem(int index) {
 			SelectedIndex = index;

@@ -3,10 +3,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Winder"
-        mc:Ignorable="d"
+		mc:Ignorable="d"
 		Loaded="Window_Loaded"
-        Title="Winder" Height="475" Width="950">
+        Height="475" Width="950"
+		WindowStyle="None"
+		AllowsTransparency="True"
+		MaxWidth="{Binding Source={x:Static SystemParameters.WorkArea}, Path=Width}"
+		MaxHeight="{Binding Source={x:Static SystemParameters.WorkArea}, Path=Height}">
 	<Window.Resources>
 		<!-- Used for the list box item selection. Looks like Finder -->
 		<Style TargetType="{x:Type ListBoxItem}">
@@ -51,5 +54,16 @@
 			<Setter Property="FontSize" Value="13" />
 		</Style>
 	</Window.Style>
-	<Grid Name="GridMain" Margin="0,0,10,0" />
+	<DockPanel Name="DockMain">
+		<DockPanel x:Name="TitleBar" DockPanel.Dock="Top">
+			<Button x:Name="CloseButton" DockPanel.Dock="Left" />
+			<Button x:Name="MaxButton" DockPanel.Dock="Left" />
+			<Button x:Name="MinButton" DockPanel.Dock="Left" />
+
+			<TextBlock Name="TextBlockTitle"
+					   Text="Winder"
+					   HorizontalAlignment="Center" />
+		</DockPanel>
+		<Grid Name="GridMain" />
+	</DockPanel>
 </Window>
