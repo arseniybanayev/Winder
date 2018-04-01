@@ -6,5 +6,8 @@
     <Application.Resources>
 		<BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 		<BitmapImage x:Key="DirectoryOpenIcon" UriSource="Resources/DirectoryOpenIcon.png" />
+		<BitmapImage x:Key="WindowCloseIcon" UriSource="Resources/WindowCloseIcon.png" />
+		<BitmapImage x:Key="WindowMinimizeIcon" UriSource="Resources/WindowMinimizeIcon.png" />
+		<BitmapImage x:Key="WindowMaximizeIcon" UriSource="Resources/WindowMaximizeIcon.png" />
 	</Application.Resources>
 </Application>

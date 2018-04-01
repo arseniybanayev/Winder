@@ -16,8 +16,7 @@ namespace Winder
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
-	public partial class MainWindow : Window
-	{
+	public partial class MainWindow : Window {
 		public MainWindow() {
 			InitializeComponent(); // Always needs to happen first
 
@@ -28,6 +27,9 @@ namespace Winder
 
 			// Background color and other UI adjustments
 			Background = new SolidColorBrush(Color.FromRgb(246, 246, 246));
+			CloseButton.FocusVisualStyle = null;
+			MinimizeButton.FocusVisualStyle = null;
+			MaximizeButton.FocusVisualStyle = null;
 
 			// Add a favorites directory
 			var favorites = Favorites.Load();
@@ -37,7 +39,7 @@ namespace Winder
 			_currentItem = FileSystemItemViewModel.Create(new DirectoryInfo(Settings.Default.NewWindowPath));
 			PushFileSystemPane(_currentItem);
 		}
-		
+
 		private void SetTitle(string titleSuffix) {
 			TextBlockTitle.Text = string.IsNullOrWhiteSpace(titleSuffix)
 				? "Winder"
@@ -81,7 +83,7 @@ namespace Winder
 
 				pane = directoryPane;
 
-				
+
 			} else if (item is FileViewModel file) {
 				// Open file preview pane
 				pane = new FilePreviewPane(file);
@@ -132,7 +134,7 @@ namespace Winder
 				GridMain.Children.RemoveAt(GridMain.Children.Count - 1);
 			}
 		}
-		
+
 		#endregion
 
 		#region GridSplitters
@@ -243,7 +245,7 @@ namespace Winder
 					nextPane.SelectItemAndFocus(0);
 			}
 		}
-		
+
 		private void DirectoryListingPane_KeyDown(object sender, KeyEventArgs e) {
 			var pane = (DirectoryListingPane)sender;
 			switch (e.Key) {
@@ -258,6 +260,38 @@ namespace Winder
 					OnRightKeyDown(pane);
 					break;
 			}
+		}
+
+		#endregion
+
+		#region Title Bar Interactions
+
+		private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e) {
+			if (e.ChangedButton == MouseButton.Left) {
+				if (e.ClickCount == 2) {
+					ToggleMaximized();
+				} else {
+					Application.Current.MainWindow.DragMove();
+				}
+			}
+		}
+
+		private void ToggleMaximized() {
+			WindowState = WindowState == WindowState.Maximized
+				? WindowState.Normal
+				: WindowState.Maximized;
+		}
+
+		private void CloseButton_Click(object sender, RoutedEventArgs e) {
+			Application.Current.Shutdown();
+		}
+
+		private void MaximizeButton_Click(object sender, RoutedEventArgs e) {
+			ToggleMaximized();
+		}
+
+		private void MinimizeButton_Click(object sender, RoutedEventArgs e) {
+			WindowState = WindowState.Minimized;
 		}
 
 		#endregion
