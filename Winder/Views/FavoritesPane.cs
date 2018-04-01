@@ -1,8 +1,10 @@
 ﻿using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
+using Winder.ViewModels;
 
 namespace Winder.Views
 {
@@ -25,5 +27,7 @@ namespace Winder.Views
 				) as DataTemplate;
 			ItemTemplate = itemTemplate;
 		}
+
+		public DirectoryViewModel SelectedDirectory => SelectedItems.OfType<DirectoryViewModel>().FirstOrDefault();
 	}
 }

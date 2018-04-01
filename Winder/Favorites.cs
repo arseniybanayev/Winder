@@ -32,7 +32,7 @@ namespace Winder
 
 		public static string[] DefaultFavoriteDirectoryPaths = {
 			@"C:\Users\arsen\Sheet Music",
-			@"C:\Users\arsen\My Pictures"
+			@"C:\Users\arsen\Pictures"
 		};
 
 		public static Favorites Load() {

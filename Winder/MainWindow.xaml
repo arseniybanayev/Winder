@@ -53,7 +53,7 @@
 			<Setter Property="FontSize" Value="13" />
 		</Style>
 	</Window.Style>
-	<DockPanel Name="DockMain" Focusable="False">
+	<DockPanel Name="DockMain" Focusable="False" Margin="3,5,0,0">
 		<!-- Background="Transparent" creates a clickable area on the DockPanel,
 			 otherwise the MouseDown event "falls through" -->
 		<DockPanel Name="TitleBar"

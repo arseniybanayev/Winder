@@ -36,8 +36,7 @@ namespace Winder
 			AddFavoritesPane(favorites);
 
 			// Set up the opening directory
-			_currentItem = FileSystemItemViewModel.Create(new DirectoryInfo(Settings.Default.NewWindowPath));
-			PushFileSystemPane(_currentItem);
+			PushFileSystemPane(FileSystemItemViewModel.Create(new DirectoryInfo(Settings.Default.NewWindowPath)));
 		}
 
 		private void SetTitle(string titleSuffix) {
@@ -50,6 +49,8 @@ namespace Winder
 
 		private void AddFavoritesPane(Favorites favorites) {
 			var pane = new FavoritesPane(favorites);
+			pane.SelectionChanged += FavoritesPane_SelectionChanged;
+			pane.PreviewKeyDown += FavoritesPane_PreviewKeyDown;
 
 			// Set column position in the main grid
 			GridMain.ColumnDefinitions.Add(new ColumnDefinition {
@@ -62,11 +63,35 @@ namespace Winder
 			AddGridSplitter(width: 3);
 		}
 
+		private void FavoritesPane_PreviewKeyDown(object sender, KeyEventArgs e) {
+			switch (e.Key) {
+				case Key.Left:
+				case Key.Right:
+				case Key.Down:
+				case Key.Up:
+					e.Handled = true; // Disable keyboard navigation in favorites pane
+					break;
+			}
+		}
+
+		private void FavoritesPane_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+			if (!(sender is FavoritesPane favorites))
+				return;
+
+			var selectedDirectory = favorites.SelectedDirectory;
+			if (selectedDirectory == null)
+				return;
+
+			// Pop all panes and start with a new opening directory
+			favorites.SelectedIndex = -1; // Make it seem like you can't select in Favorites
+			PopFileSystemPanesUntil(-1);
+			PushFileSystemPane(selectedDirectory);
+		}
+
 		#endregion
 
 		#region File/Directory Pane Stack
-
-		private FileSystemItemViewModel _currentItem;
+		
 		private List<IFileSystemPane> _panes = new List<IFileSystemPane>();
 
 		private void PushFileSystemPane(FileSystemItemViewModel item) {
@@ -135,6 +160,11 @@ namespace Winder
 			}
 		}
 
+		private void PopFileSystemPanesUntil(int indexOfPaneToKeep) {
+			for (var i = _panes.Count - 1; i > indexOfPaneToKeep; i--)
+				PopFileSystemPane();
+		}
+
 		#endregion
 
 		#region GridSplitters
@@ -158,7 +188,7 @@ namespace Winder
 
 		#endregion
 
-		#region Selection
+		#region Directory Listing Selection
 
 		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetLatestSelectedFiles(DirectoryListingPane directory) {
 			return Tuple.Create(_panes.IndexOf(directory), directory.SelectedItems.Cast<FileSystemItemViewModel>().ToReadOnlyList());
@@ -168,8 +198,7 @@ namespace Winder
 			var latestSelection = GetLatestSelectedFiles((DirectoryListingPane)sender);
 
 			// Remove panes to the right of the pane containing the latest selection
-			for (var i = _panes.Count - 1; i > latestSelection.Item1; i--)
-				PopFileSystemPane();
+			PopFileSystemPanesUntil(latestSelection.Item1);
 
 			// Update the window title
 			if (latestSelection.Item2.Count > 0)
