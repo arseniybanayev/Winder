@@ -1,8 +1,7 @@
 ﻿<Application x:Class="Winder.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Winder"
-             StartupUri="MainWindow.xaml">
+			 StartupUri="MainWindow.xaml">
     <Application.Resources>
 		<BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 		<BitmapImage x:Key="DirectoryOpenIcon" UriSource="Resources/DirectoryOpenIcon.png" />
