@@ -41,6 +41,13 @@ namespace Winder
 			AddFavoritesPane(favorites);
 
 			// Set up the opening directory
+			var newWindowPath = Settings.Default.NewWindowPath;
+			if (string.IsNullOrWhiteSpace(newWindowPath) || !Directory.Exists(newWindowPath)) {
+				newWindowPath = Environment.GetEnvironmentVariable("USERPROFILE");
+				Settings.Default.NewWindowPath = newWindowPath;
+				Settings.Default.Save();
+			}
+
 			PushFileSystemPane(FileSystemItemViewModel.Create(new DirectoryInfo(Settings.Default.NewWindowPath)));
 		}
 

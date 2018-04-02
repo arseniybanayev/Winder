@@ -12,7 +12,7 @@ namespace Winder.ViewModels
 
 		public DirectoryViewModel(DirectoryInfo directoryInfo) : base(directoryInfo) {
 			_children = new Lazy<ObservableCollection<FileSystemItemViewModel>>(() =>
-				new ObservableCollection<FileSystemItemViewModel>(Source.GetFileSystemInfos().Select(FileSystemItemViewModel.Create)));
+				new ObservableCollection<FileSystemItemViewModel>(Source.GetFileSystemInfos().Select(Create)));
 		}
 
 		public DirectoryInfo Source => (DirectoryInfo)SourceUntyped;
