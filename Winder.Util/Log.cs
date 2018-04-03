@@ -13,7 +13,7 @@ namespace Winder.Util
 {
 	public interface ILogger
 	{
-		void Log(string message);
+		void Log(string message, Exception e = null);
 		void Flush();
 	}
 
@@ -48,21 +48,42 @@ namespace Winder.Util
 			}
 		}
 
-		public void Log(string message) {
+		public void Log(string message, Exception e = null) {
 			lock (_queue) {
-				_queue.Enqueue(() => Write(FormatMessage(message)));
+				_queue.Enqueue(() => Write(FormatMessage(message, e)));
 			}
 
 			_hasNewItems.Set();
 		}
 
-		public static string FormatMessage(string message) {
-			var now = DateTimeOffset.Now;
-			var thread = Thread.CurrentThread;
-			var threadName = string.IsNullOrWhiteSpace(thread.Name)
-				? thread.ManagedThreadId.ToString()
-				: thread.Name;
-			return $"{now.ToString("G")},{threadName}: {message}";
+		private const string Delimiter = ", ";
+
+		public static string FormatMessage(string message, Exception e = null) {
+			var s = new StringBuilder();
+
+			// Add some diagnostic information (time and thread name)
+			s.Append(DateTime.Now.ToString("HH:mm:ss.fff") + Delimiter);
+			s.Append((Thread.CurrentThread.Name ?? "main") + ":" + Thread.CurrentThread.ManagedThreadId + Delimiter);
+
+			// Add tagline message
+			s.Append(message);
+
+			if (e == null)
+				return s.ToString();
+
+			// Add formatted exception
+			s.Append(Environment.NewLine + e.GetType().FullName);
+			s.Append(Environment.NewLine + e.Message);
+			s.Append(Environment.NewLine + e.StackTrace);
+			var eInner = e.InnerException;
+			var i = 0;
+			while (eInner != null) {
+				s.Append(Environment.NewLine + "Inner Exception " + (++i) + ": " + eInner.GetType().FullName + ": " + eInner.Message);
+				s.Append(Environment.NewLine + eInner.StackTrace);
+				eInner = eInner.InnerException;
+			}
+
+			return s.ToString();
 		}
 
 		public virtual void AllDone() { }
@@ -115,7 +136,7 @@ namespace Winder.Util
 
 	public static class Log
 	{
-		private readonly static List<ILogger> Loggers = new List<ILogger>();
+		private static readonly List<ILogger> Loggers = new List<ILogger>();
 
 		public static void Add(ILogger logger) {
 			Loggers.Add(logger);
@@ -125,9 +146,13 @@ namespace Winder.Util
 			WriteToAllLoggers(message);
 		}
 
-		private static void WriteToAllLoggers(string message) {
+		public static void Error(string message, Exception e = null) {
+			WriteToAllLoggers(message, e);
+		}
+
+		private static void WriteToAllLoggers(string message, Exception e = null) {
 			foreach (var logger in Loggers)
-				logger.Log(message);
+				logger.Log(message, e);
 		}
 
 		public static void Flush() {

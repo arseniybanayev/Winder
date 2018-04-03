@@ -128,28 +128,29 @@ namespace Winder
 
 		#region File/Directory Pane Stack
 		
-		private List<IFileSystemPane> _panes = new List<IFileSystemPane>();
+		private readonly List<IFileSystemPane> _panes = new List<IFileSystemPane>();
 
 		private void PushFileSystemPane(FileSystemItemViewModel item) {
 			IFileSystemPane pane;
-			if (item is DirectoryViewModel directory) {
-				// Open directory listing pane
-				var directoryPane = new DirectoryListingPane(directory);
+			switch (item) {
+				case DirectoryViewModel directory:
+					// Open directory listing pane
+					var directoryPane = new DirectoryListingPane(directory);
 
-				// Subscribe to events
-				directoryPane.MouseDoubleClick += DirectoryListingPane_MouseDoubleClick;
-				directoryPane.PreviewKeyDown += DirectoryListingPane_PreviewKeyDown;
-				directoryPane.KeyDown += DirectoryListingPane_KeyDown;
-				directoryPane.SelectionChanged += DirectoryListingPane_SelectionChanged;
+					// Subscribe to events
+					directoryPane.MouseDoubleClick += DirectoryListingPane_MouseDoubleClick;
+					directoryPane.PreviewKeyDown += DirectoryListingPane_PreviewKeyDown;
+					directoryPane.KeyDown += DirectoryListingPane_KeyDown;
+					directoryPane.SelectionChanged += DirectoryListingPane_SelectionChanged;
 
-				pane = directoryPane;
-
-
-			} else if (item is FileViewModel file) {
-				// Open file preview pane
-				pane = new FilePreviewPane(file);
-			} else {
-				throw new NotSupportedException($"{item.GetType()} doesn't have a corresponding Pane");
+					pane = directoryPane;
+					break;
+				case FileViewModel file:
+					// Open file preview pane
+					pane = new FilePreviewPane(file);
+					break;
+				default:
+					throw new NotSupportedException($"{item.GetType()} doesn't have a corresponding Pane");
 			}
 
 			// Add a grid splitter for resizing if this isn't the first pane
@@ -175,16 +176,18 @@ namespace Winder
 			var pane = _panes[_panes.Count - 1];
 
 			// Pane-specific disposal
-			if (pane is DirectoryListingPane directoryPane) {
-				// Unsubscribe from events
-				directoryPane.MouseDoubleClick -= DirectoryListingPane_MouseDoubleClick;
-				directoryPane.PreviewKeyDown -= DirectoryListingPane_PreviewKeyDown;
-				directoryPane.KeyDown -= DirectoryListingPane_KeyDown;
-				directoryPane.SelectionChanged -= DirectoryListingPane_SelectionChanged;
-			} else if (pane is FilePreviewPane filePane) {
-
-			} else {
-				throw new NotSupportedException($"{pane.GetType()} was an unexpected Pane");
+			switch (pane) {
+				case DirectoryListingPane directoryPane:
+					// Unsubscribe from events
+					directoryPane.MouseDoubleClick -= DirectoryListingPane_MouseDoubleClick;
+					directoryPane.PreviewKeyDown -= DirectoryListingPane_PreviewKeyDown;
+					directoryPane.KeyDown -= DirectoryListingPane_KeyDown;
+					directoryPane.SelectionChanged -= DirectoryListingPane_SelectionChanged;
+					break;
+				case FilePreviewPane filePane:
+					break;
+				default:
+					throw new NotSupportedException($"{pane.GetType()} was an unexpected Pane");
 			}
 
 			// Remove the pane
@@ -289,17 +292,24 @@ namespace Winder
 		}
 
 		private void OnLeftKeyDown(DirectoryListingPane pane) {
-			if (_panes.IndexOf(pane) == 0)
-				return;
-			// If it's not the root pane, deselect everything in this pane (which should close deeper panes)
-			// and focus on the selected item in the previous pane,
-			pane.SelectItem(-1);
-			var previousPane = (DirectoryListingPane)_panes[_panes.IndexOf(pane) - 1];
-			previousPane.FocusSelectedItem();
+			if (_panes.IndexOf(pane) == 0) {
+				// In the root directory pane, try to move up (which should close deeper panes if open)
+				// and focus on the newly selected item
+				if (pane.SelectedIndex > 0)
+					pane.SelectItemAndFocus(pane.SelectedIndex - 1);
+			} else {
+				// If it's not the root pane, deselect everything in this pane (which should close deeper panes)
+				// and focus on the selected item in the previous pane
+				pane.SelectItem(-1);
+				var previousPane = (DirectoryListingPane)_panes[_panes.IndexOf(pane) - 1];
+				previousPane.FocusSelectedItem();
+			}
 		}
 
 		private void OnRightKeyDown(DirectoryListingPane pane) {
 			if (pane.SelectedItem is FileViewModel) {
+				// If a file is selected in this pane, try to move down (which should change the deeper panes)
+				// and focus on the newly selected item
 				if (pane.SelectedIndex < pane.Items.Count - 1)
 					pane.SelectItemAndFocus(pane.SelectedIndex + 1);
 			} else {
@@ -336,7 +346,7 @@ namespace Winder
 				if (e.ClickCount == 2) {
 					ToggleMaximized();
 				} else {
-					Application.Current.MainWindow.DragMove();
+					Application.Current.MainWindow?.DragMove();
 				}
 			}
 		}
@@ -361,8 +371,13 @@ namespace Winder
 
 		#endregion
 
-		private void StatusBar_MouseDown(object sender, MouseButtonEventArgs e) {
+		#region Status Bar Interactions
 
+		private void StatusBar_MouseDown(object sender, MouseButtonEventArgs e) {
+			Application.Current.MainWindow?.DragMove();
 		}
+
+		#endregion
+
 	}
 }
