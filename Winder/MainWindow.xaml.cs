@@ -9,7 +9,6 @@ using System.Windows.Controls;
 using Winder.ViewModels;
 using Winder.Views;
 using Winder.Properties;
-using System.Windows.Media;
 using Winder.Util;
 
 namespace Winder
@@ -31,7 +30,6 @@ namespace Winder
 			});
 
 			// Background color and other UI adjustments
-			Background = new SolidColorBrush(Color.FromRgb(246, 246, 246));
 			CloseButton.FocusVisualStyle = null;
 			MinimizeButton.FocusVisualStyle = null;
 			MaximizeButton.FocusVisualStyle = null;
@@ -51,12 +49,33 @@ namespace Winder
 			PushFileSystemPane(FileSystemItemViewModel.Create(new DirectoryInfo(Settings.Default.NewWindowPath)));
 		}
 
-		private void SetTitle(string titleSuffix) {
-			var newTitle = string.IsNullOrWhiteSpace(titleSuffix)
+		private void SetTitle(string title) {
+			var newTitle = string.IsNullOrWhiteSpace(title)
 				? "Winder"
-				: $"{titleSuffix}";
+				: title;
 			Log.Info($"Setting title to {newTitle}");
 			TextBlockTitle.Text = newTitle;
+		}
+
+		private void SetStatus(string status) {
+			var newStatus = status ?? "";
+			Log.Info($"Setting status to {newStatus}");
+			TextBlockStatus.Text = newStatus;
+		}
+
+		private void UpdateTitleAndStatus() {
+			var directoryListing = _panes.OfType<DirectoryListingPane>().Last(); // At least the root will always be there
+
+			SetTitle(directoryListing.ViewModel.Name);
+
+			var selectedCount = directoryListing.SelectedItems.Count;
+			if (selectedCount > 1) {
+				// More than one item selected in the deepest directory listing
+				SetStatus($"{selectedCount} of {directoryListing.ViewModel.Children.Count} selected, ? GB available");
+			} else {
+				// One item or no items selected
+				SetStatus($"{directoryListing.ViewModel.Children.Count} items, ? GB available");
+			}
 		}
 
 		#region Favorites Pane
@@ -223,17 +242,11 @@ namespace Winder
 			// Remove panes to the right of the pane containing the latest selection
 			PopFileSystemPanesUntil(latestSelection.Item1);
 
-			// Update the window title
-			if (latestSelection.Item2.Count > 0)
-				SetTitle(_panes[latestSelection.Item1].FileSystemItemName);
-			else if (latestSelection.Item1 > 0)
-				SetTitle(_panes[latestSelection.Item1 - 1].FileSystemItemName);
-			else
-				SetTitle(_panes[0].FileSystemItemName);
-
 			// Show a new pane for the selected item, if there is one
 			if (latestSelection.Item2.Count == 1)
 				PushFileSystemPane(latestSelection.Item2.Single());
+
+			UpdateTitleAndStatus();
 		}
 
 		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetDeepestSelection() {
@@ -278,8 +291,8 @@ namespace Winder
 		private void OnLeftKeyDown(DirectoryListingPane pane) {
 			if (_panes.IndexOf(pane) == 0)
 				return;
-			// If it's not the root pane, deselect everything (which should close deeper panes)
-			// and focus on the selected item in the previous pane
+			// If it's not the root pane, deselect everything in this pane (which should close deeper panes)
+			// and focus on the selected item in the previous pane,
 			pane.SelectItem(-1);
 			var previousPane = (DirectoryListingPane)_panes[_panes.IndexOf(pane) - 1];
 			previousPane.FocusSelectedItem();
@@ -348,5 +361,8 @@ namespace Winder
 
 		#endregion
 
+		private void StatusBar_MouseDown(object sender, MouseButtonEventArgs e) {
+
+		}
 	}
 }

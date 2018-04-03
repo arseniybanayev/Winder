@@ -8,7 +8,7 @@ namespace Winder.Views
 {
 	public class DirectoryListingPane : ListBox, IFileSystemPane
 	{
-		private readonly DirectoryViewModel _directoryViewModel;
+		public readonly DirectoryViewModel ViewModel;
 
 		public DirectoryListingPane(DirectoryViewModel directory) {
 			// Basic display and interactivity settings
@@ -18,8 +18,8 @@ namespace Winder.Views
 			SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
 
 			// Items come from the supplied view model
-			_directoryViewModel = directory;
-			ItemsSource = _directoryViewModel.Children;
+			ViewModel = directory;
+			ItemsSource = ViewModel.Children;
 
 			// Template for items
 			var itemTemplate = XamlReader.Load(
@@ -27,9 +27,7 @@ namespace Winder.Views
 				) as DataTemplate;
 			ItemTemplate = itemTemplate;
 		}
-
-		public string FileSystemItemName => _directoryViewModel.Name;
-
+		
 		internal void SelectItem(int index) {
 			SelectedIndex = index;
 		}
@@ -39,8 +37,26 @@ namespace Winder.Views
 			FocusSelectedItem();
 		}
 
+		/// <summary>
+		/// Focuses the first selected item if multiple are selected.
+		/// Does nothing if no item is selected
+		/// </summary>
 		internal void FocusSelectedItem() {
+			if (SelectedItem == null)
+				return;
 			((ListBoxItem)ItemContainerGenerator.ContainerFromItem(SelectedItem)).Focus();
+		}
+
+		/// <summary>
+		/// Returns whether the first selected item is focused if multiple are selected.
+		/// Returns false if no item is selected.
+		/// </summary>
+		internal bool SelectedItemIsFocused {
+			get {
+				if (SelectedItem == null)
+					return false;
+				return ((ListBoxItem)ItemContainerGenerator.ContainerFromItem(SelectedItem)).IsFocused;
+			}
 		}
 	}
 }
