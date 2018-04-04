@@ -2,7 +2,7 @@
 using System.Windows.Threading;
 using Winder.Util;
 
-namespace Winder
+namespace Winder.App
 {
 	/// <summary>
 	/// Interaction logic for App.xaml
@@ -11,7 +11,11 @@ namespace Winder
 	{
 		protected override void OnStartup(StartupEventArgs e) {
 			base.OnStartup(e);
-			Application.Current.DispatcherUnhandledException += HandleException;
+
+			Log.Add(new ConsoleLogger());
+			Log.Add(new FileLogger());
+
+			Current.DispatcherUnhandledException += HandleException;
 		}
 
 		private static void HandleException(object sender, DispatcherUnhandledExceptionEventArgs e) {

@@ -3,16 +3,19 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media;
 
-namespace Winder.ViewModels
+namespace Winder
 {
 	public abstract class FileSystemItemViewModel
 	{
 		public static FileSystemItemViewModel Create(FileSystemInfo fileSystemInfo) {
-			if (fileSystemInfo is DirectoryInfo directoryInfo)
-				return new DirectoryViewModel(directoryInfo);
-			if (fileSystemInfo is FileInfo fileInfo)
-				return new FileViewModel(fileInfo);
-			throw new NotSupportedException($"{nameof(FileSystemItemViewModel)} doesn't support {fileSystemInfo.GetType().Name}");
+			switch (fileSystemInfo) {
+				case DirectoryInfo directoryInfo:
+					return new DirectoryViewModel(directoryInfo);
+				case FileInfo fileInfo:
+					return new FileViewModel(fileInfo);
+				default:
+					throw new NotSupportedException($"{nameof(FileSystemItemViewModel)} doesn't support {fileSystemInfo.GetType().Name}");
+			}
 		}
 
 		protected FileSystemItemViewModel(FileSystemInfo fileSystemInfo) {
@@ -34,11 +37,11 @@ namespace Winder.ViewModels
 		public Visibility VisibleIfDirectory => IsDirectory ? Visibility.Visible : Visibility.Hidden;
 
 		public ImageSource SmallImage => _smallImage.Value;
-		private Lazy<ImageSource> _smallImage;
+		private readonly Lazy<ImageSource> _smallImage;
 
 		public ImageSource LargeImage => _largeImage.Value;
-		private Lazy<ImageSource> _largeImage;
+		private readonly Lazy<ImageSource> _largeImage;
 
-		public FileSystemInfo SourceUntyped { get; private set; }
+		public FileSystemInfo SourceUntyped { get; }
 	}
 }

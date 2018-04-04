@@ -1,52 +1,42 @@
 ﻿using System;
-using System.Windows.Input;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using Winder.ViewModels;
-using Winder.Views;
-using Winder.Properties;
+using System.Windows.Input;
+using Winder.App.Properties;
 using Winder.Util;
 
-namespace Winder
+namespace Winder.App
 {
-	/// <summary>
-	/// Interaction logic for MainWindow.xaml
-	/// </summary>
 	public partial class MainWindow : Window
 	{
 		public MainWindow() {
-			Log.Add(new ConsoleLogger());
-			Log.Add(new FileLogger());
-
 			InitializeComponent(); // Always needs to happen first
 
 			// Triggers the font family and size to update to what is defined in the xaml window style
 			StyleProperty.OverrideMetadata(typeof(Window), new FrameworkPropertyMetadata {
 				DefaultValue = FindResource(typeof(Window))
 			});
-
-			// Background color and other UI adjustments
-			CloseButton.FocusVisualStyle = null;
-			MinimizeButton.FocusVisualStyle = null;
-			MaximizeButton.FocusVisualStyle = null;
-
-			// Add a favorites directory
-			var favorites = Favorites.Load();
-			AddFavoritesPane(favorites);
+			
+			// Set up the favorites pane
+			var favorites = FavoritesViewModel.Load(Settings.Default.FavoritePaths?.Cast<string>());
+			favorites.CollectionChanged += Favorites_CollectionChanged;
+			ListBoxFavorites.ItemsSource = favorites.FavoriteDirectories;
 
 			// Set up the opening directory
 			var newWindowPath = Settings.Default.NewWindowPath;
 			if (string.IsNullOrWhiteSpace(newWindowPath) || !Directory.Exists(newWindowPath)) {
-				newWindowPath = Environment.GetEnvironmentVariable("USERPROFILE");
+				newWindowPath = FileUtil.GetUserProfilePath();
 				Settings.Default.NewWindowPath = newWindowPath;
 				Settings.Default.Save();
 			}
 
-			PushFileSystemPane(FileSystemItemViewModel.Create(new DirectoryInfo(Settings.Default.NewWindowPath)));
+			// Open the opening directory
+			PushPane(FileSystemItemViewModel.Create(new DirectoryInfo(Settings.Default.NewWindowPath)));
 		}
 
 		private void SetTitle(string title) {
@@ -64,7 +54,7 @@ namespace Winder
 		}
 
 		private void UpdateTitleAndStatus() {
-			var directoryListing = _panes.OfType<DirectoryListingPane>().Last(); // At least the root will always be there
+			var directoryListing = _filePanes.OfType<Views.DirectoryListingPane>().Last(); // At least the root will always be there
 
 			SetTitle(directoryListing.ViewModel.Name);
 
@@ -79,25 +69,15 @@ namespace Winder
 		}
 
 		#region Favorites Pane
-
-		private void AddFavoritesPane(Favorites favorites) {
-			Log.Info("Adding favorites pane");
-			var pane = new FavoritesPane(favorites);
-			pane.SelectionChanged += FavoritesPane_SelectionChanged;
-			pane.PreviewKeyDown += FavoritesPane_PreviewKeyDown;
-
-			// Set column position in the main grid
-			GridMain.ColumnDefinitions.Add(new ColumnDefinition {
-				Width = new GridLength(180, GridUnitType.Pixel) // Panes' widths are in pixels, but resizable
-			});
-			Grid.SetColumn(pane, GridMain.ColumnDefinitions.Count - 1);
-			GridMain.Children.Add(pane); // Add to main grid
-
-			// Add a grid splitter to resize the favorites pane
-			AddGridSplitter(width: 3);
+		
+		private static void Favorites_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+			var stringCollection = new StringCollection();
+			stringCollection.AddRange(((FavoritesViewModel)sender).FavoriteDirectories.Select(c => c.FullName).ToArray());
+			Settings.Default.FavoritePaths = stringCollection;
+			Settings.Default.Save();
 		}
 
-		private void FavoritesPane_PreviewKeyDown(object sender, KeyEventArgs e) {
+		private void ListBoxFavorites_PreviewKeyDown(object sender, KeyEventArgs e) {
 			switch (e.Key) {
 				case Key.Left:
 				case Key.Right:
@@ -109,33 +89,33 @@ namespace Winder
 			}
 		}
 
-		private void FavoritesPane_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			if (!(sender is FavoritesPane favorites)) // Shouldn't happen
+		private void ListBoxFavorites_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+			if (!(sender is ListBox favorites)) // Shouldn't happen
 				return;
 
-			var selectedDirectory = favorites.SelectedDirectory;
+			var selectedDirectory = favorites.SelectedItems.OfType<DirectoryViewModel>().FirstOrDefault();
 			if (selectedDirectory == null)
 				return;
 
 			// Pop all panes and start with a new opening directory
 			Log.Info($"Switching to new root directory from favorites: {selectedDirectory.FullName}");
 			favorites.SelectedIndex = -1; // Make it seem like you can't select in Favorites
-			PopFileSystemPanesUntil(-1);
-			PushFileSystemPane(selectedDirectory);
+			PopPanesUntil(-1);
+			PushPane(selectedDirectory);
 		}
 
 		#endregion
 
-		#region File/Directory Pane Stack
+		#region File/Directory Panes
 		
-		private readonly List<IFileSystemPane> _panes = new List<IFileSystemPane>();
+		private readonly List<Views.IFileSystemPane> _filePanes = new List<Views.IFileSystemPane>();
 
-		private void PushFileSystemPane(FileSystemItemViewModel item) {
-			IFileSystemPane pane;
+		private void PushPane(FileSystemItemViewModel item) {
+			Views.IFileSystemPane pane;
 			switch (item) {
 				case DirectoryViewModel directory:
 					// Open directory listing pane
-					var directoryPane = new DirectoryListingPane(directory);
+					var directoryPane = new Views.DirectoryListingPane(directory);
 
 					// Subscribe to events
 					directoryPane.MouseDoubleClick += DirectoryListingPane_MouseDoubleClick;
@@ -147,71 +127,69 @@ namespace Winder
 					break;
 				case FileViewModel file:
 					// Open file preview pane
-					pane = new FilePreviewPane(file);
+					pane = new Views.FilePreviewPane(file);
 					break;
 				default:
 					throw new NotSupportedException($"{item.GetType()} doesn't have a corresponding Pane");
 			}
 
 			// Add a grid splitter for resizing if this isn't the first pane
-			if (_panes.Count > 0)
+			if (_filePanes.Count > 0)
 				AddGridSplitter(width: 5);
 
-			// Set column position in the main grid
+			// Add the pane
 			GridMain.ColumnDefinitions.Add(new ColumnDefinition {
 				Width = new GridLength(300, GridUnitType.Pixel) // Panes' widths are in pixels, but resizable
 			});
-			Grid.SetColumn((UIElement)pane, GridMain.ColumnDefinitions.Count - 1);
-
+			Grid.SetColumn((UIElement)pane, GridMain.ColumnDefinitions.Count - 1); // Set column position in the main grid
 			Log.Info($"Pushing pane at grid column {GridMain.ColumnDefinitions.Count - 1} for {item.FullName}");
-
-			_panes.Add(pane); // Add to stack
+			_filePanes.Add(pane); // Add to stack
 			GridMain.Children.Add((UIElement)pane); // Add to main grid
+
+			// Scroll to the end horizontally
+			ScrollViewerMain.ScrollToRightEnd();
 		}
 
-		/// <summary>
-		/// Removes the deepest one
-		/// </summary>
-		private void PopFileSystemPane() {
-			var pane = _panes[_panes.Count - 1];
+		private void PopPane() {
+			var pane = _filePanes[_filePanes.Count - 1];
 
 			// Pane-specific disposal
 			switch (pane) {
-				case DirectoryListingPane directoryPane:
+				case Views.DirectoryListingPane directoryPane:
 					// Unsubscribe from events
 					directoryPane.MouseDoubleClick -= DirectoryListingPane_MouseDoubleClick;
 					directoryPane.PreviewKeyDown -= DirectoryListingPane_PreviewKeyDown;
 					directoryPane.KeyDown -= DirectoryListingPane_KeyDown;
 					directoryPane.SelectionChanged -= DirectoryListingPane_SelectionChanged;
 					break;
-				case FilePreviewPane filePane:
+				case Views.FilePreviewPane _:
 					break;
 				default:
 					throw new NotSupportedException($"{pane.GetType()} was an unexpected Pane");
 			}
 
 			// Remove the pane
-			Log.Info($"Removing pane #{_panes.Count - 1} from grid column {GridMain.ColumnDefinitions.Count - 1}");
-			_panes.RemoveAt(_panes.Count - 1);
+			Log.Info($"Removing pane #{_filePanes.Count - 1} from grid column {GridMain.ColumnDefinitions.Count - 1}");
+			_filePanes.RemoveAt(_filePanes.Count - 1);
 			GridMain.ColumnDefinitions.RemoveAt(GridMain.ColumnDefinitions.Count - 1);
 			GridMain.Children.RemoveAt(GridMain.Children.Count - 1);
 
-			if (_panes.Count > 0) { // If there are still panes remaining, then there's also a GridSplitter to remove
+			if (_filePanes.Count > 0) { // If there are still panes remaining, then there's also a GridSplitter to remove
 				Log.Info($"Removing grid splitter from grid column {GridMain.ColumnDefinitions.Count - 1}");
 				GridMain.ColumnDefinitions.RemoveAt(GridMain.ColumnDefinitions.Count - 1);
 				GridMain.Children.RemoveAt(GridMain.Children.Count - 1);
 			}
 		}
 
-		private void PopFileSystemPanesUntil(int indexOfPaneToKeep) {
-			for (var i = _panes.Count - 1; i > indexOfPaneToKeep; i--)
-				PopFileSystemPane();
+		private void PopPanesUntil(int indexOfPaneToKeep) {
+			for (var i = _filePanes.Count - 1; i > indexOfPaneToKeep; i--)
+				PopPane();
 		}
 
 		#endregion
 
-		#region GridSplitters
-
+		#region Grid Splitters
+		
 		/// <summary>
 		/// Must remove this grid splitter manually, there is no corresponding `RemoveGridSplitter`
 		/// </summary>
@@ -234,27 +212,27 @@ namespace Winder
 
 		#region Directory Listing Selection
 
-		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetLatestSelectedFiles(DirectoryListingPane directory) {
-			return Tuple.Create(_panes.IndexOf(directory), directory.SelectedItems.Cast<FileSystemItemViewModel>().ToReadOnlyList());
+		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetLatestSelectedFiles(Views.DirectoryListingPane directory) {
+			return Tuple.Create(_filePanes.IndexOf(directory), directory.SelectedItems.Cast<FileSystemItemViewModel>().ToReadOnlyList());
 		}
 
 		private void DirectoryListingPane_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			var latestSelection = GetLatestSelectedFiles((DirectoryListingPane)sender);
+			var latestSelection = GetLatestSelectedFiles((Views.DirectoryListingPane)sender);
 			Log.Info($"Selection at pane #{latestSelection.Item1} changed to {latestSelection.Item2.ToStringDelimited(f => f.Name)}");
 
 			// Remove panes to the right of the pane containing the latest selection
-			PopFileSystemPanesUntil(latestSelection.Item1);
+			PopPanesUntil(latestSelection.Item1);
 
 			// Show a new pane for the selected item, if there is one
 			if (latestSelection.Item2.Count == 1)
-				PushFileSystemPane(latestSelection.Item2.Single());
+				PushPane(latestSelection.Item2.Single());
 
 			UpdateTitleAndStatus();
 		}
 
 		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetDeepestSelection() {
-			for (var i = _panes.Count - 1; i >= 0; i--) {
-				if (!(_panes[i] is DirectoryListingPane directory))
+			for (var i = _filePanes.Count - 1; i >= 0; i--) {
+				if (!(_filePanes[i] is Views.DirectoryListingPane directory))
 					continue;
 				if (directory.SelectedItems.Count == 0)
 					continue;
@@ -278,7 +256,7 @@ namespace Winder
 		#region Keyboard
 
 		private void DirectoryListingPane_PreviewKeyDown(object sender, KeyEventArgs e) {
-			var pane = (DirectoryListingPane)sender;
+			var pane = (Views.DirectoryListingPane)sender;
 			switch (e.Key) {
 				case Key.Left:
 					OnLeftKeyDown(pane);
@@ -291,8 +269,8 @@ namespace Winder
 			}
 		}
 
-		private void OnLeftKeyDown(DirectoryListingPane pane) {
-			if (_panes.IndexOf(pane) == 0) {
+		private void OnLeftKeyDown(Views.DirectoryListingPane pane) {
+			if (_filePanes.IndexOf(pane) == 0) {
 				// In the root directory pane, try to move up (which should close deeper panes if open)
 				// and focus on the newly selected item
 				if (pane.SelectedIndex > 0)
@@ -301,12 +279,12 @@ namespace Winder
 				// If it's not the root pane, deselect everything in this pane (which should close deeper panes)
 				// and focus on the selected item in the previous pane
 				pane.SelectItem(-1);
-				var previousPane = (DirectoryListingPane)_panes[_panes.IndexOf(pane) - 1];
+				var previousPane = (Views.DirectoryListingPane)_filePanes[_filePanes.IndexOf(pane) - 1];
 				previousPane.FocusSelectedItem();
 			}
 		}
 
-		private void OnRightKeyDown(DirectoryListingPane pane) {
+		private void OnRightKeyDown(Views.DirectoryListingPane pane) {
 			if (pane.SelectedItem is FileViewModel) {
 				// If a file is selected in this pane, try to move down (which should change the deeper panes)
 				// and focus on the newly selected item
@@ -315,14 +293,14 @@ namespace Winder
 			} else {
 				// Go into the next pane, which is guaranteed to be open
 				// bc the selected file system item in this pane is a directory
-				var nextPane = (DirectoryListingPane)_panes[_panes.IndexOf(pane) + 1];
+				var nextPane = (Views.DirectoryListingPane)_filePanes[_filePanes.IndexOf(pane) + 1];
 				if (nextPane.Items.Count > 0)
 					nextPane.SelectItemAndFocus(0);
 			}
 		}
 
 		private void DirectoryListingPane_KeyDown(object sender, KeyEventArgs e) {
-			var pane = (DirectoryListingPane)sender;
+			var pane = (Views.DirectoryListingPane)sender;
 			switch (e.Key) {
 				case Key.Enter:
 					// Enter is a shortcut for double-clicking the mouse

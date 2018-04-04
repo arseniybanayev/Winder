@@ -4,13 +4,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
-using Winder.ViewModels;
 
-namespace Winder.Views
+namespace Winder.App.Views
 {
 	public class FavoritesPane : ListBox
 	{
-		public FavoritesPane(Favorites favorites) {
+		public FavoritesPane(FavoritesViewModel favorites) {
 			// Basic display and interactivity settings
 			SelectionMode = SelectionMode.Single;
 			HorizontalAlignment = HorizontalAlignment.Stretch; // within the column it occupies in GridMain
@@ -19,7 +18,7 @@ namespace Winder.Views
 			BorderThickness = new Thickness(0);
 			Background = new SolidColorBrush(Color.FromRgb(246, 246, 246));
 
-			ItemsSource = favorites.Children;
+			ItemsSource = favorites.FavoriteDirectories;
 
 			// Template for items
 			var itemTemplate = XamlReader.Load(
@@ -27,7 +26,5 @@ namespace Winder.Views
 				) as DataTemplate;
 			ItemTemplate = itemTemplate;
 		}
-
-		public DirectoryViewModel SelectedDirectory => SelectedItems.OfType<DirectoryViewModel>().FirstOrDefault();
 	}
 }

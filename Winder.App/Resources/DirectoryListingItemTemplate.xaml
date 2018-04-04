@@ -14,7 +14,7 @@
 		<Image Source="{Binding SmallImage}"
 			   Width="16" Height="16"
 			   Grid.Column="0" />
-		<TextBlock Text="{Binding NameWithoutExtension}"
+		<TextBlock Text="{Binding Name}"
 				   TextTrimming="CharacterEllipsis" Margin="8,0,8,0"
 				   Grid.Column="1" />
 		<Image Source="{StaticResource DirectoryOpenIcon}"

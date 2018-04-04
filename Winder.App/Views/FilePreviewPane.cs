@@ -1,8 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using Winder.ViewModels;
 
-namespace Winder.Views
+namespace Winder.App.Views
 {
 	public class FilePreviewPane : Image, IFileSystemPane
 	{

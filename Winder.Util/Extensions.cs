@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Winder
+namespace Winder.Util
 {
 	public static class ListExtensions
 	{
@@ -13,14 +13,6 @@ namespace Winder
 
 	public static class DictionaryExtensions
 	{
-		public static Dictionary<TKey, TValue> ToDictionary<TSource, TKey, TValue>(
-			this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> valueSelector) {
-			var dictionary = new Dictionary<TKey, TValue>();
-			foreach (var item in source)
-				dictionary.Add(keySelector(item), valueSelector(item));
-			return dictionary;
-		}
-
 		public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(
 			this IEnumerable<TValue> source, Func<TValue, TKey> keySelector) {
 			return source.ToDictionary(keySelector, v => v);

@@ -2,9 +2,8 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
-using Winder.ViewModels;
 
-namespace Winder.Views
+namespace Winder.App.Views
 {
 	public class DirectoryListingPane : ListBox, IFileSystemPane
 	{
