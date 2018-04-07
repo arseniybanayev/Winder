@@ -3,6 +3,8 @@ using System.Windows.Controls;
 
 namespace Winder.App.Views
 {
+	
+
 	public class FilePreviewPane : Image, IFileSystemPane
 	{
 		private readonly FileViewModel _fileViewModel;

@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Winder.App.Properties;
+using Winder.App.Views;
 using Winder.Util;
 
 namespace Winder.App
@@ -16,6 +17,10 @@ namespace Winder.App
 	{
 		public MainWindow() {
 			InitializeComponent(); // Always needs to happen first
+
+			var previewHandler = new PreviewHandler();
+			previewHandler.Height = previewHandler.Width = 100;
+			previewHandler.Content = @"C:\QuantEquity.txt";
 
 			// Triggers the font family and size to update to what is defined in the xaml window style
 			StyleProperty.OverrideMetadata(typeof(Window), new FrameworkPropertyMetadata {
@@ -54,7 +59,7 @@ namespace Winder.App
 		}
 
 		private void UpdateTitleAndStatus() {
-			var directoryListing = _filePanes.OfType<Views.DirectoryListingPane>().Last(); // At least the root will always be there
+			var directoryListing = _filePanes.OfType<DirectoryListingPane>().Last(); // At least the root will always be there
 
 			SetTitle(directoryListing.ViewModel.Name);
 
@@ -108,14 +113,14 @@ namespace Winder.App
 
 		#region File/Directory Panes
 		
-		private readonly List<Views.IFileSystemPane> _filePanes = new List<Views.IFileSystemPane>();
+		private readonly List<IFileSystemPane> _filePanes = new List<IFileSystemPane>();
 
 		private void PushPane(FileSystemItemViewModel item) {
-			Views.IFileSystemPane pane;
+			IFileSystemPane pane;
 			switch (item) {
 				case DirectoryViewModel directory:
 					// Open directory listing pane
-					var directoryPane = new Views.DirectoryListingPane(directory);
+					var directoryPane = new DirectoryListingPane(directory);
 
 					// Subscribe to events
 					directoryPane.MouseDoubleClick += DirectoryListingPane_MouseDoubleClick;
@@ -127,7 +132,7 @@ namespace Winder.App
 					break;
 				case FileViewModel file:
 					// Open file preview pane
-					pane = new Views.FilePreviewPane(file);
+					pane = new FilePreviewPane(file);
 					break;
 				default:
 					throw new NotSupportedException($"{item.GetType()} doesn't have a corresponding Pane");
@@ -155,14 +160,14 @@ namespace Winder.App
 
 			// Pane-specific disposal
 			switch (pane) {
-				case Views.DirectoryListingPane directoryPane:
+				case DirectoryListingPane directoryPane:
 					// Unsubscribe from events
 					directoryPane.MouseDoubleClick -= DirectoryListingPane_MouseDoubleClick;
 					directoryPane.PreviewKeyDown -= DirectoryListingPane_PreviewKeyDown;
 					directoryPane.KeyDown -= DirectoryListingPane_KeyDown;
 					directoryPane.SelectionChanged -= DirectoryListingPane_SelectionChanged;
 					break;
-				case Views.FilePreviewPane _:
+				case FilePreviewPane _:
 					break;
 				default:
 					throw new NotSupportedException($"{pane.GetType()} was an unexpected Pane");
@@ -212,12 +217,12 @@ namespace Winder.App
 
 		#region Directory Listing Selection
 
-		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetLatestSelectedFiles(Views.DirectoryListingPane directory) {
+		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetLatestSelectedFiles(DirectoryListingPane directory) {
 			return Tuple.Create(_filePanes.IndexOf(directory), directory.SelectedItems.Cast<FileSystemItemViewModel>().ToReadOnlyList());
 		}
 
 		private void DirectoryListingPane_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			var latestSelection = GetLatestSelectedFiles((Views.DirectoryListingPane)sender);
+			var latestSelection = GetLatestSelectedFiles((DirectoryListingPane)sender);
 			Log.Info($"Selection at pane #{latestSelection.Item1} changed to {latestSelection.Item2.ToStringDelimited(f => f.Name)}");
 
 			// Remove panes to the right of the pane containing the latest selection
@@ -232,7 +237,7 @@ namespace Winder.App
 
 		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetDeepestSelection() {
 			for (var i = _filePanes.Count - 1; i >= 0; i--) {
-				if (!(_filePanes[i] is Views.DirectoryListingPane directory))
+				if (!(_filePanes[i] is DirectoryListingPane directory))
 					continue;
 				if (directory.SelectedItems.Count == 0)
 					continue;
@@ -256,7 +261,7 @@ namespace Winder.App
 		#region Keyboard
 
 		private void DirectoryListingPane_PreviewKeyDown(object sender, KeyEventArgs e) {
-			var pane = (Views.DirectoryListingPane)sender;
+			var pane = (DirectoryListingPane)sender;
 			switch (e.Key) {
 				case Key.Left:
 					OnLeftKeyDown(pane);
@@ -269,7 +274,7 @@ namespace Winder.App
 			}
 		}
 
-		private void OnLeftKeyDown(Views.DirectoryListingPane pane) {
+		private void OnLeftKeyDown(DirectoryListingPane pane) {
 			if (_filePanes.IndexOf(pane) == 0) {
 				// In the root directory pane, try to move up (which should close deeper panes if open)
 				// and focus on the newly selected item
@@ -279,12 +284,12 @@ namespace Winder.App
 				// If it's not the root pane, deselect everything in this pane (which should close deeper panes)
 				// and focus on the selected item in the previous pane
 				pane.SelectItem(-1);
-				var previousPane = (Views.DirectoryListingPane)_filePanes[_filePanes.IndexOf(pane) - 1];
+				var previousPane = (DirectoryListingPane)_filePanes[_filePanes.IndexOf(pane) - 1];
 				previousPane.FocusSelectedItem();
 			}
 		}
 
-		private void OnRightKeyDown(Views.DirectoryListingPane pane) {
+		private void OnRightKeyDown(DirectoryListingPane pane) {
 			if (pane.SelectedItem is FileViewModel) {
 				// If a file is selected in this pane, try to move down (which should change the deeper panes)
 				// and focus on the newly selected item
@@ -293,14 +298,14 @@ namespace Winder.App
 			} else {
 				// Go into the next pane, which is guaranteed to be open
 				// bc the selected file system item in this pane is a directory
-				var nextPane = (Views.DirectoryListingPane)_filePanes[_filePanes.IndexOf(pane) + 1];
+				var nextPane = (DirectoryListingPane)_filePanes[_filePanes.IndexOf(pane) + 1];
 				if (nextPane.Items.Count > 0)
 					nextPane.SelectItemAndFocus(0);
 			}
 		}
 
 		private void DirectoryListingPane_KeyDown(object sender, KeyEventArgs e) {
-			var pane = (Views.DirectoryListingPane)sender;
+			var pane = (DirectoryListingPane)sender;
 			switch (e.Key) {
 				case Key.Enter:
 					// Enter is a shortcut for double-clicking the mouse

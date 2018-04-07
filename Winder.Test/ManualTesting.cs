@@ -1,6 +1,4 @@
-﻿using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Winder.Util;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Winder.Test
 {
@@ -9,8 +7,7 @@ namespace Winder.Test
 	{
 		[TestMethod]
 		public void PlayWithDirectories() {
-			var favorites = FileUtil.GetFavoritesFromUserLinks().ToList();
-			
+			var h = Preview.CreatePreviewHandler(@"C:\QuantEquity.txt", out var isInitialized);
 		}
 	}
 }

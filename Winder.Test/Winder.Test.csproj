@@ -59,6 +59,10 @@
       <Project>{5586F221-13C2-4859-9B4E-1E69865A5620}</Project>
       <Name>Winder.Util</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Winder\Winder.csproj">
+      <Project>{E088F30C-BB04-44CB-A63D-5242B02117B7}</Project>
+      <Name>Winder</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
