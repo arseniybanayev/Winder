@@ -4,9 +4,11 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using Winder.App.Properties;
 using Winder.App.Views;
 using Winder.Util;
@@ -18,15 +20,16 @@ namespace Winder.App
 		public MainWindow() {
 			InitializeComponent(); // Always needs to happen first
 
-			var previewHandler = new PreviewHandler();
-			previewHandler.Height = previewHandler.Width = 100;
-			previewHandler.Content = @"C:\QuantEquity.txt";
+			//var previewHost = new PreviewHost(new FileInfo(@"C:\Users\arsen\Sheet Music\(VA) NJC.pdf"));
+			//previewHost.HorizontalAlignment = HorizontalAlignment.Stretch;
+			//previewHost.Background = new SolidColorBrush(Color.FromRgb(100, 100, 100));
+			//Content = previewHost;
 
 			// Triggers the font family and size to update to what is defined in the xaml window style
 			StyleProperty.OverrideMetadata(typeof(Window), new FrameworkPropertyMetadata {
 				DefaultValue = FindResource(typeof(Window))
 			});
-			
+
 			// Set up the favorites pane
 			var favorites = FavoritesViewModel.Load(Settings.Default.FavoritePaths?.Cast<string>());
 			favorites.CollectionChanged += Favorites_CollectionChanged;
@@ -48,13 +51,11 @@ namespace Winder.App
 			var newTitle = string.IsNullOrWhiteSpace(title)
 				? "Winder"
 				: title;
-			Log.Info($"Setting title to {newTitle}");
 			TextBlockTitle.Text = newTitle;
 		}
 
 		private void SetStatus(string status) {
 			var newStatus = status ?? "";
-			Log.Info($"Setting status to {newStatus}");
 			TextBlockStatus.Text = newStatus;
 		}
 
@@ -74,7 +75,7 @@ namespace Winder.App
 		}
 
 		#region Favorites Pane
-		
+
 		private static void Favorites_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
 			var stringCollection = new StringCollection();
 			stringCollection.AddRange(((FavoritesViewModel)sender).FavoriteDirectories.Select(c => c.FullName).ToArray());
@@ -88,7 +89,6 @@ namespace Winder.App
 				case Key.Right:
 				case Key.Down:
 				case Key.Up:
-					Log.Info($"Handling PreviewKeyDown for Key={e.Key} in favorites pane");
 					e.Handled = true; // Disable keyboard navigation in favorites pane
 					break;
 			}
@@ -103,7 +103,6 @@ namespace Winder.App
 				return;
 
 			// Pop all panes and start with a new opening directory
-			Log.Info($"Switching to new root directory from favorites: {selectedDirectory.FullName}");
 			favorites.SelectedIndex = -1; // Make it seem like you can't select in Favorites
 			PopPanesUntil(-1);
 			PushPane(selectedDirectory);
@@ -112,7 +111,7 @@ namespace Winder.App
 		#endregion
 
 		#region File/Directory Panes
-		
+
 		private readonly List<IFileSystemPane> _filePanes = new List<IFileSystemPane>();
 
 		private void PushPane(FileSystemItemViewModel item) {
@@ -147,7 +146,6 @@ namespace Winder.App
 				Width = new GridLength(300, GridUnitType.Pixel) // Panes' widths are in pixels, but resizable
 			});
 			Grid.SetColumn((UIElement)pane, GridMain.ColumnDefinitions.Count - 1); // Set column position in the main grid
-			Log.Info($"Pushing pane at grid column {GridMain.ColumnDefinitions.Count - 1} for {item.FullName}");
 			_filePanes.Add(pane); // Add to stack
 			GridMain.Children.Add((UIElement)pane); // Add to main grid
 
@@ -167,20 +165,19 @@ namespace Winder.App
 					directoryPane.KeyDown -= DirectoryListingPane_KeyDown;
 					directoryPane.SelectionChanged -= DirectoryListingPane_SelectionChanged;
 					break;
-				case FilePreviewPane _:
+				case FilePreviewPane filePane:
+					filePane.UnloadPreviewHandler();
 					break;
 				default:
 					throw new NotSupportedException($"{pane.GetType()} was an unexpected Pane");
 			}
 
 			// Remove the pane
-			Log.Info($"Removing pane #{_filePanes.Count - 1} from grid column {GridMain.ColumnDefinitions.Count - 1}");
 			_filePanes.RemoveAt(_filePanes.Count - 1);
 			GridMain.ColumnDefinitions.RemoveAt(GridMain.ColumnDefinitions.Count - 1);
 			GridMain.Children.RemoveAt(GridMain.Children.Count - 1);
 
 			if (_filePanes.Count > 0) { // If there are still panes remaining, then there's also a GridSplitter to remove
-				Log.Info($"Removing grid splitter from grid column {GridMain.ColumnDefinitions.Count - 1}");
 				GridMain.ColumnDefinitions.RemoveAt(GridMain.ColumnDefinitions.Count - 1);
 				GridMain.Children.RemoveAt(GridMain.Children.Count - 1);
 			}
@@ -194,7 +191,7 @@ namespace Winder.App
 		#endregion
 
 		#region Grid Splitters
-		
+
 		/// <summary>
 		/// Must remove this grid splitter manually, there is no corresponding `RemoveGridSplitter`
 		/// </summary>
@@ -209,7 +206,6 @@ namespace Winder.App
 				Width = width // constant width
 			};
 			Grid.SetColumn(gridSplitter, GridMain.ColumnDefinitions.Count - 1);
-			Log.Info($"Adding grid splitter at grid column {GridMain.ColumnDefinitions.Count - 1}");
 			GridMain.Children.Add(gridSplitter);
 		}
 
@@ -223,7 +219,6 @@ namespace Winder.App
 
 		private void DirectoryListingPane_SelectionChanged(object sender, SelectionChangedEventArgs e) {
 			var latestSelection = GetLatestSelectedFiles((DirectoryListingPane)sender);
-			Log.Info($"Selection at pane #{latestSelection.Item1} changed to {latestSelection.Item2.ToStringDelimited(f => f.Name)}");
 
 			// Remove panes to the right of the pane containing the latest selection
 			PopPanesUntil(latestSelection.Item1);
