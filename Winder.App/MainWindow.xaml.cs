@@ -4,11 +4,9 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using Winder.App.Properties;
 using Winder.App.Views;
 using Winder.Util;
@@ -19,18 +17,13 @@ namespace Winder.App
 	{
 		public MainWindow() {
 			InitializeComponent(); // Always needs to happen first
-
-			//var previewHost = new PreviewHost(new FileInfo(@"C:\Users\arsen\Sheet Music\(VA) NJC.pdf"));
-			//previewHost.HorizontalAlignment = HorizontalAlignment.Stretch;
-			//previewHost.Background = new SolidColorBrush(Color.FromRgb(100, 100, 100));
-			//Content = previewHost;
-
+			
 			// Triggers the font family and size to update to what is defined in the xaml window style
 			StyleProperty.OverrideMetadata(typeof(Window), new FrameworkPropertyMetadata {
 				DefaultValue = FindResource(typeof(Window))
 			});
 
-			// Set up the favorites pane
+			// Set up the favorites pan 
 			var favorites = FavoritesViewModel.Load(Settings.Default.FavoritePaths?.Cast<string>());
 			favorites.CollectionChanged += Favorites_CollectionChanged;
 			ListBoxFavorites.ItemsSource = favorites.FavoriteDirectories;

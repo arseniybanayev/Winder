@@ -1,16 +1,11 @@
 using System;
 using System.IO;
-using System.Reflection;
-using System.ComponentModel;
-using System.Drawing;
-using System.Collections.Generic;
 using System.Windows.Forms;
 using Winder.Preview.ComInterop;
 using Microsoft.Win32;
 using System.Threading.Tasks;
 using System.Threading;
 using Winder.Util;
-using System.Windows.Threading;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
