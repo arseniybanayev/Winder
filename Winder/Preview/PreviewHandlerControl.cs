@@ -1,144 +1,152 @@
 using System;
 using System.IO;
-using System.Windows.Forms;
 using Winder.Preview.ComInterop;
 using Microsoft.Win32;
 using System.Threading.Tasks;
-using System.Threading;
 using Winder.Util;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace Winder.Preview
 {
-	// The preview handler control is a Windows Forms control because
-	// it needs an IntPtr handle for the view to be occupied by the preview,
-	// but in WPF, individual views/controls are not windows with HWND handles
-	// like they are in WinForms.
-	public partial class PreviewHandlerControl : UserControl
+	/// <summary>
+	/// Given a <see cref="FileInfo"/>, this control is responsible for loading
+	/// the file preview into its visible area. It's a Windows Forms control (see
+	/// remarks).
+	/// </summary>
+	public class PreviewHandlerControl : UserControl
 	{
-		private readonly FileInfo _file;
-		private IPreviewHandler _currentPreviewHandler;
+		/// <summary>
+		/// This is just a way to ensure the loading happens atomically and allow
+		/// most of the loading to happen in a background thread.
+		/// </summary>
+		private Lazy<IPreviewHandler> _previewHandlerLazy;
+
+		private bool _loadingPreview;
 		private Stream _currentStream;
 
-		public delegate void PreviewInitializedEventHandler(bool actuallyShowingPreview);
-		public event PreviewInitializedEventHandler PreviewInitialized;
-
-		public PreviewHandlerControl(FileInfo file) {
-			var stopwatchConstructor = Stopwatch.StartNew();
-			InitializeComponent();
-			_file = file;
-
-			var stopwatchTaskStart = Stopwatch.StartNew();
-			Task.Run(() => {
+		public PreviewHandlerControl(FileInfo file, IntPtr windowHandle) {
+			_previewHandlerLazy = new Lazy<IPreviewHandler>(() => {
 				try {
-					var stopatchReadingRegistry = Stopwatch.StartNew();
-					var guid = GetPreviewHandlerGUID(_file.Extension);
+					var guid = GetPreviewHandlerGUID(file.Extension);
 					if (guid == Guid.Empty) {
-						// TODO: Show default image because we have no preview handler
-						_initializeTask.TrySetResult(false);
-						return;
+						Log.Error($"Did not find a preview handler for file extension '{file.Extension}': file='{file.FullName}'");
+						PreviewLoaded?.Invoke(false);
+						return null;
 					}
-					Log.Info($"Reading the registry took {stopatchReadingRegistry.ElapsedMilliseconds}ms");
 
 					// Create the COM type using reflection
-					var stopwatchInitializePreviewHandler = Stopwatch.StartNew();
-					Type comType = Type.GetTypeFromCLSID(guid);
-					_currentPreviewHandler = (IPreviewHandler)Activator.CreateInstance(comType);
+					Log.Info($"Found preview handler for file extension '{file.Extension}': guid={guid}, file='{file.FullName}'");
+					var comType = Type.GetTypeFromCLSID(guid);
+					var previewHandler = (IPreviewHandler)Activator.CreateInstance(comType);
 
 					// Load it either as a file or a stream, as appropriate
-					if (_currentPreviewHandler is IInitializeWithFile initWithFile) {
-						initWithFile.Initialize(_file.FullName, 0);
-					} else if (_currentPreviewHandler is IInitializeWithStream initWithStream) {
-						_currentStream = File.Open(_file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-						var stream = new StreamWrapper(_currentStream);
-						initWithStream.Initialize(stream, 0);
-					} else {
-						_initializeTask.TrySetResult(false);
-						return;
+					switch (previewHandler) {
+						case IInitializeWithFile initWithFile:
+							initWithFile.Initialize(file.FullName, 0);
+							break;
+						case IInitializeWithStream initWithStream:
+							_currentStream = File.Open(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+							var stream = new StreamWrapper(_currentStream);
+							initWithStream.Initialize(stream, 0);
+							break;
+						default:
+							Log.Error($"Preview handler for file is neither {nameof(IInitializeWithFile)} nor {nameof(IInitializeWithStream)}: '{file.FullName}'");
+							PreviewLoaded?.Invoke(false);
+							return null;
 					}
 
-					Log.Info($"Initializing the preview handler took {stopwatchInitializePreviewHandler.ElapsedMilliseconds}ms");
-
-					var rect = GetCurrentRect();
-
-					// Run on UI thread
-					System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
-						var stopwatchDispatcherCode = Stopwatch.StartNew();
-						if (_cancel.IsCancellationRequested) return;
-						_currentPreviewHandler.SetWindow(this.Handle, ref rect);
-						if (_cancel.IsCancellationRequested) return; 
-						_currentPreviewHandler.DoPreview();
-						Log.Info($"Dispatcher code took {stopwatchDispatcherCode.ElapsedMilliseconds}ms");
-					}).Task.ContinueWith(t => {
-						if (t.IsCompleted)
-							_initializeTask.TrySetResult(true);
-						else if (t.IsFaulted)
-							_initializeTask.TrySetException(t.Exception);
+					Application.Current.Dispatcher.Invoke(() => {
+						var rect = GetCurrentRect();
+						previewHandler.SetWindow(windowHandle, ref rect);
+						previewHandler.DoPreview();
+						previewHandler.SetRect(ref rect);
 					});
+
+					PreviewLoaded?.Invoke(true);
+					return previewHandler;
 				} catch (Exception e) {
 					Log.Error($"Error initializing {nameof(PreviewHandlerControl)} for '{file?.FullName}'", e);
-					_initializeTask.TrySetException(e);
+					PreviewLoaded?.Invoke(false);
+					return null;
 				}
 			});
-			Log.Info($"Constructor of {nameof(PreviewHandlerControl)} took {stopwatchConstructor.ElapsedMilliseconds}ms");
-			Log.Info($"Starting the task in {nameof(PreviewHandlerControl)} took {stopwatchTaskStart.ElapsedMilliseconds}ms");
 		}
 
-		private TaskCompletionSource<bool> _initializeTask = new TaskCompletionSource<bool>();
-		private CancellationTokenSource _cancel = new CancellationTokenSource();
+		public delegate void PreviewLoadedHandler(bool success);
+		public event PreviewLoadedHandler PreviewLoaded;
 
-		public Task GetInitializeTask() => _initializeTask.Task;
-
-		private static Guid GetPreviewHandlerGUID(string fileExtension) {
-			// open the registry key corresponding to the file extension
-			RegistryKey ext = Registry.ClassesRoot.OpenSubKey(fileExtension);
-			if (ext != null) {
-				// open the key that indicates the GUID of the preview handler type
-				RegistryKey test = ext.OpenSubKey("shellex\\{8895b1c6-b41f-4c1c-a562-0d564250836f}");
-				if (test != null) return new Guid(Convert.ToString(test.GetValue(null)));
-
-				// sometimes preview handlers are declared on key for the class
-				string className = Convert.ToString(ext.GetValue(null));
-				if (className != null) {
-					test = Registry.ClassesRoot.OpenSubKey(className + "\\shellex\\{8895b1c6-b41f-4c1c-a562-0d564250836f}");
-					if (test != null) return new Guid(Convert.ToString(test.GetValue(null)));
-				}
-			}
-
-			return Guid.Empty;
-		}
-
-		private void OnResize(object sender, EventArgs e) {
-			if (_currentPreviewHandler != null) {
+		protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e) {
+			base.OnPropertyChanged(e);
+			if (e.Property != ActualHeightProperty && e.Property != ActualWidthProperty)
+				return;
+			if (ActualHeight <= 0 || ActualWidth <= 0)
+				return;
+			if ((_previewHandlerLazy?.IsValueCreated ?? false) && _previewHandlerLazy.Value != null) {
 				var rect = GetCurrentRect();
-				_currentPreviewHandler.SetRect(ref rect);
+				_previewHandlerLazy.Value.SetRect(ref rect);
 			}
 		}
 
-		private RECT GetCurrentRect() {
-			RECT rect;
-			rect.top = 0;
-			rect.bottom = this.Height;
-			rect.left = 0;
-			rect.right = this.Width;
-			return rect;
+		//private void OnResize(object sender, EventArgs e) {
+		//	if ((_previewHandlerLazy?.IsValueCreated ?? false) && _previewHandlerLazy.Value != null) {
+		//		var rect = GetCurrentRect();
+		//		_previewHandlerLazy.Value.SetRect(ref rect);
+		//	}
+		//}
+
+		/// <summary>
+		/// Starts a task in the background to load the preview handler, and then
+		/// signals the UI thread to draw the preview.
+		/// </summary>
+		public void LoadPreview() {
+			_loadingPreview = true;
+			Task.Run(() => _previewHandlerLazy.Value);
 		}
 
 		public void Unload() {
-			_cancel.Cancel();
+			if (!_loadingPreview)
+				return;
 			Task.Run(() => {
-				GetInitializeTask().Wait();
-				if (_currentPreviewHandler != null) {
-					_currentPreviewHandler.Unload();
-					Marshal.FinalReleaseComObject(_currentPreviewHandler);
-					_currentPreviewHandler = null;
-					GC.Collect();
-				}
+				var previewHandler = _previewHandlerLazy.Value;
+				if (previewHandler == null)
+					return;
+
+				previewHandler.Unload();
+				Marshal.FinalReleaseComObject(_previewHandlerLazy);
+				_previewHandlerLazy = null;
+				GC.Collect();
 
 				_currentStream?.Close();
 				_currentStream = null;
 			});
+		}
+
+		private static Guid GetPreviewHandlerGUID(string fileExtension) {
+			// open the registry key corresponding to the file extension
+			var ext = Registry.ClassesRoot.OpenSubKey(fileExtension);
+			if (ext == null) return Guid.Empty;
+
+			// open the key that indicates the GUID of the preview handler type
+			var test = ext.OpenSubKey("shellex\\{8895b1c6-b41f-4c1c-a562-0d564250836f}");
+			if (test != null) return new Guid(Convert.ToString(test.GetValue(null)));
+
+			// sometimes preview handlers are declared on key for the class
+			var className = Convert.ToString(ext.GetValue(null));
+			test = Registry.ClassesRoot.OpenSubKey(className + "\\shellex\\{8895b1c6-b41f-4c1c-a562-0d564250836f}");
+			return test != null
+				? new Guid(Convert.ToString(test.GetValue(null)))
+				: Guid.Empty;
+		}
+		
+		private RECT GetCurrentRect() {
+			RECT rect;
+			rect.top = 0;
+			rect.bottom = (int)(ActualHeight * PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice.M11);
+			rect.left = 0;
+			rect.right = (int)(ActualWidth * PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice.M11);
+			return rect;
 		}
 	}
 }

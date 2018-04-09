@@ -13,18 +13,18 @@ namespace Winder.Preview
 	{
 		#region Constants
 
-		private const long POSITION_NOT_SET = -1;
-		private const int STG_E_INVALIDFUNCTION = 32774;
-		private const int CHUNK = 4096;
+		private const long PositionNotSet = -1;
+		private const int StgEInvalidfunction = 32774;
+		private const int Chunk = 4096;
 
-		private const string METHOD_NOT_SUPPORTED = "Method not supported.";
-		private const string UNKNOWN_ERROR = "Unknown error.";
+		private const string MethodNotSupported = "Method not supported.";
+		private const string UnknownError = "Unknown error.";
 
 		#endregion
 
 		#region Private Data
 
-		private long _indexPosition = POSITION_NOT_SET;
+		private long _indexPosition = PositionNotSet;
 		private readonly Stream _stream = null;
 
 		#endregion
@@ -36,7 +36,7 @@ namespace Winder.Preview
 		/// </summary>
 		/// <param name="stream">The stream being wrapped.</param>
 		internal StreamWrapper(Stream stream) {
-			_indexPosition = POSITION_NOT_SET;
+			_indexPosition = PositionNotSet;
 			_stream = stream;
 		}
 
@@ -47,7 +47,7 @@ namespace Winder.Preview
 		public void Clone(out IStream ppstm) {
 			// Operation not supported
 			ppstm = null;
-			throw new ExternalException(METHOD_NOT_SUPPORTED, STG_E_INVALIDFUNCTION);
+			throw new ExternalException(MethodNotSupported, StgEInvalidfunction);
 		}
 
 		public void Commit(int grfCommitFlags) {
@@ -55,15 +55,15 @@ namespace Winder.Preview
 		}
 
 		public void CopyTo(IStream pstm, long cb, IntPtr pcbRead, IntPtr pcbWritten) {
-			byte[] buffer = new byte[CHUNK];
+			var buffer = new byte[Chunk];
 			long written = 0;
-			int read = 0;
+			var read = 0;
 
 			if (cb != 0) {
 				SetSizeToPosition();
 				do {
-					int count = CHUNK;
-					if (written + CHUNK > cb) {
+					var count = Chunk;
+					if (written + Chunk > cb) {
 						count = (int)(cb - written);
 					}
 
@@ -88,11 +88,11 @@ namespace Winder.Preview
 
 		public void LockRegion(long libOffset, long cb, int dwLockType) {
 			// Operation not supported
-			throw new ExternalException(METHOD_NOT_SUPPORTED, STG_E_INVALIDFUNCTION);
+			throw new ExternalException(MethodNotSupported, StgEInvalidfunction);
 		}
 
 		public void Read(byte[] pv, int cb, IntPtr pcbRead) {
-			int read = 0;
+			var read = 0;
 			if (cb != 0) {
 				SetSizeToPosition();
 				read = _stream.Read(pv, 0, cb);
@@ -104,18 +104,18 @@ namespace Winder.Preview
 		}
 
 		public void Revert() {
-			throw new ExternalException(METHOD_NOT_SUPPORTED, STG_E_INVALIDFUNCTION);
+			throw new ExternalException(MethodNotSupported, StgEInvalidfunction);
 		}
 
 		public void Seek(long dlibMove, int dwOrigin, IntPtr plibNewPosition) {
 			long newPosition = 0;
-			SeekOrigin seekOrigin = SeekOrigin.Begin;
+			var seekOrigin = SeekOrigin.Begin;
 
 			try {
 				// attempt to cast parameter
 				seekOrigin = (SeekOrigin)dwOrigin;
 			} catch {
-				throw new ExternalException(UNKNOWN_ERROR, STG_E_INVALIDFUNCTION);
+				throw new ExternalException(UnknownError, StgEInvalidfunction);
 			}
 
 			if (_stream.CanWrite) {
@@ -126,7 +126,7 @@ namespace Winder.Preview
 
 					case SeekOrigin.Current:
 						newPosition = _indexPosition;
-						if (newPosition == POSITION_NOT_SET) {
+						if (newPosition == PositionNotSet) {
 							newPosition = _stream.Position;
 						}
 
@@ -139,23 +139,23 @@ namespace Winder.Preview
 
 					default:
 						// should never happen
-						throw new ExternalException(UNKNOWN_ERROR, STG_E_INVALIDFUNCTION);
+						throw new ExternalException(UnknownError, StgEInvalidfunction);
 				}
 
 				if (newPosition > _stream.Length) {
 					_indexPosition = newPosition;
 				} else {
 					_stream.Position = newPosition;
-					_indexPosition = POSITION_NOT_SET;
+					_indexPosition = PositionNotSet;
 				}
 			} else {
 				try {
 					newPosition = _stream.Seek(dlibMove, seekOrigin);
 				} catch (ArgumentException) {
-					throw new ExternalException(UNKNOWN_ERROR, STG_E_INVALIDFUNCTION);
+					throw new ExternalException(UnknownError, StgEInvalidfunction);
 				}
 
-				_indexPosition = POSITION_NOT_SET;
+				_indexPosition = PositionNotSet;
 			}
 
 			if (plibNewPosition != IntPtr.Zero) {
@@ -174,7 +174,7 @@ namespace Winder.Preview
 
 		public void UnlockRegion(long libOffset, long cb, int dwLockType) {
 			// Operation not supported
-			throw new ExternalException(METHOD_NOT_SUPPORTED, STG_E_INVALIDFUNCTION);
+			throw new ExternalException(MethodNotSupported, StgEInvalidfunction);
 		}
 
 		public void Write(byte[] pv, int cb, IntPtr pcbWritten) {
@@ -193,7 +193,7 @@ namespace Winder.Preview
 		#region Private Methods
 
 		private void SetSizeToPosition() {
-			if (_indexPosition != POSITION_NOT_SET) {
+			if (_indexPosition != PositionNotSet) {
 				// position requested greater than current length?
 				if (_indexPosition > _stream.Length) {
 					// expand stream
@@ -202,7 +202,7 @@ namespace Winder.Preview
 
 				// set new position
 				_stream.Position = _indexPosition;
-				_indexPosition = POSITION_NOT_SET;
+				_indexPosition = PositionNotSet;
 			}
 		}
 

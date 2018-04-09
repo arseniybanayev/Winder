@@ -14,16 +14,16 @@ namespace Winder
 		// from https://stackoverflow.com/a/29819585
 
 		/// <summary>Maximal Length of unmanaged Windows-Path-strings</summary>
-		private const int MAX_PATH = 260;
+		private const int MaxPath = 260;
 
 		/// <summary>Maximal Length of unmanaged Typename</summary>
-		private const int MAX_TYPE = 80;
+		private const int MaxType = 80;
 
-		private const int FILE_ATTRIBUTE_DIRECTORY = 0x10;
-		private const int FILE_ATTRIBUTE_NORMAL = 0x80;
+		private const int FileAttributeDirectory = 0x10;
+		private const int FileAttributeNormal = 0x80;
 
 		[Flags]
-		private enum SHGFI : int
+		private enum Shgfi : int
 		{
 			/// <summary>get icon</summary>
 			Icon = 0x000000100,
@@ -53,7 +53,7 @@ namespace Winder
 			Selected = 0x000010000,
 
 			/// <summary>get only specified attributes</summary>
-			Attr_Specified = 0x000020000,
+			AttrSpecified = 0x000020000,
 
 			/// <summary>get large icon</summary>
 			LargeIcon = 0x000000000,
@@ -68,7 +68,7 @@ namespace Winder
 			ShellIconSize = 0x000000004,
 
 			/// <summary>pszPath is a pidl</summary>
-			PIDL = 0x000000008,
+			Pidl = 0x000000008,
 
 			/// <summary>use passed dwFileAttribute</summary>
 			UseFileAttributes = 0x000000010,
@@ -81,9 +81,9 @@ namespace Winder
 		}
 
 		[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-		private struct SHFILEINFO
+		private struct Shfileinfo
 		{
-			public SHFILEINFO(bool b) {
+			public Shfileinfo(bool b) {
 				hIcon = IntPtr.Zero;
 				iIcon = 0;
 				dwAttributes = 0;
@@ -91,35 +91,35 @@ namespace Winder
 				szTypeName = "";
 			}
 
-			public IntPtr hIcon;
-			public int iIcon;
-			public uint dwAttributes;
-			[MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_PATH)] public string szDisplayName;
-			[MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_TYPE)] public string szTypeName;
+			public readonly IntPtr hIcon;
+			public readonly int iIcon;
+			public readonly uint dwAttributes;
+			[MarshalAs(UnmanagedType.ByValTStr, SizeConst = MaxPath)] public readonly string szDisplayName;
+			[MarshalAs(UnmanagedType.ByValTStr, SizeConst = MaxType)] public readonly string szTypeName;
 		};
 
 		[DllImport("shell32.dll", CharSet = CharSet.Auto)]
 		private static extern int SHGetFileInfo(
 			string pszPath,
 			int dwFileAttributes,
-			out SHFILEINFO psfi,
+			out Shfileinfo psfi,
 			uint cbfileInfo,
-			SHGFI uFlags);
+			Shgfi uFlags);
 
 		[DllImport("user32.dll", SetLastError = true)]
 		private static extern bool DestroyIcon(IntPtr hIcon);
 
 		public static ImageSource GetIcon(string strPath, bool isDirectory, bool bSmall) {
-			var info = new SHFILEINFO(true);
+			var info = new Shfileinfo(true);
 			var cbFileInfo = Marshal.SizeOf(info);
-			SHGFI flags;
+			Shgfi flags;
 			if (bSmall)
-				flags = SHGFI.Icon | SHGFI.SmallIcon | SHGFI.UseFileAttributes;
+				flags = Shgfi.Icon | Shgfi.SmallIcon | Shgfi.UseFileAttributes;
 			else
-				flags = SHGFI.Icon | SHGFI.LargeIcon | SHGFI.UseFileAttributes;
+				flags = Shgfi.Icon | Shgfi.LargeIcon | Shgfi.UseFileAttributes;
 
 			SHGetFileInfo(strPath,
-				isDirectory ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL,
+				isDirectory ? FileAttributeDirectory : FileAttributeNormal,
 				out info, (uint)cbFileInfo, flags);
 
 			var iconHandle = info.hIcon;

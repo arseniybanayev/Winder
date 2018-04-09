@@ -76,8 +76,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="FilePreviewWindow.xaml.cs">
+      <DependentUpon>FilePreviewWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\DirectoryListingPane.cs" />
-    <Compile Include="Views\FilePreviewPane.cs" />
+    <Compile Include="Views\FileInfoPane.cs" />
     <Compile Include="Views\IFileSystemPane.cs" />
     <Content Include="Resources\DirectoryListingItemTemplate.xaml">
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
@@ -92,6 +95,10 @@
     <Resource Include="Resources\WindowMinimizeIcon.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
+    <Page Include="FilePreviewWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

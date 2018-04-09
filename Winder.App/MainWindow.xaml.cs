@@ -124,7 +124,7 @@ namespace Winder.App
 					break;
 				case FileViewModel file:
 					// Open file preview pane
-					pane = new FilePreviewPane(file);
+					pane = new FileInfoPane(file);
 					break;
 				default:
 					throw new NotSupportedException($"{item.GetType()} doesn't have a corresponding Pane");
@@ -158,8 +158,8 @@ namespace Winder.App
 					directoryPane.KeyDown -= DirectoryListingPane_KeyDown;
 					directoryPane.SelectionChanged -= DirectoryListingPane_SelectionChanged;
 					break;
-				case FilePreviewPane filePane:
-					filePane.UnloadPreviewHandler();
+				case FileInfoPane filePane:
+					filePane.Dispose();
 					break;
 				default:
 					throw new NotSupportedException($"{pane.GetType()} was an unexpected Pane");
@@ -235,13 +235,31 @@ namespace Winder.App
 			return Tuple.Create(-1, Enumerable.Empty<FileSystemItemViewModel>().ToReadOnlyList());
 		}
 
-		private void OpenDeepestSelection() {
-			foreach (var file in GetDeepestSelection().Item2)
-				Process.Start(file.SourceUntyped.FullName);
-		}
+		#endregion
+
+		#region Open and Preview
 
 		private void DirectoryListingPane_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
-			OpenDeepestSelection();
+			OpenSelected();
+		}
+
+		private void OpenSelected() {
+			var selectedFiles = GetDeepestSelection().Item2;
+			foreach (var file in selectedFiles) {
+				Log.Info($"Opening {file.FullName}");
+				Process.Start(file.SourceUntyped.FullName);
+			}
+		}
+
+		private void PreviewSelected() {
+			var allSelectedItems = GetDeepestSelection().Item2;
+			var selectedFiles = allSelectedItems.OfType<FileViewModel>().ToList();
+			Log.Info($"Opening preview for {selectedFiles.Count} files (out of {allSelectedItems.Count} total selected items):");
+			foreach (var file in selectedFiles.Take(1)) {
+				Log.Info($"  {file.FullName}");
+				var previewWindow = new FilePreviewWindow(file.Source);
+				previewWindow.Show();
+			}
 		}
 
 		#endregion
@@ -249,8 +267,16 @@ namespace Winder.App
 		#region Keyboard
 
 		private void DirectoryListingPane_PreviewKeyDown(object sender, KeyEventArgs e) {
+			// KeyDown is enough for most purposes, but for some reason the event gets captured
+			// in some cases, so we handle it first using PreviewKeyDown. See:
+			// https://stackoverflow.com/questions/49480579/arrow-keys-causing-undesirable-horizontal-scrolling-in-wpf-listbox
+
 			var pane = (DirectoryListingPane)sender;
 			switch (e.Key) {
+				case Key.Space:
+					// Space opens the preview pane
+					PreviewSelected();
+					break;
 				case Key.Left:
 					OnLeftKeyDown(pane);
 					e.Handled = true;
@@ -258,6 +284,22 @@ namespace Winder.App
 				case Key.Right:
 					OnRightKeyDown(pane);
 					e.Handled = true;
+					break;
+			}
+		}
+		
+		private void DirectoryListingPane_KeyDown(object sender, KeyEventArgs e) {
+			var pane = (DirectoryListingPane)sender;
+			switch (e.Key) {
+				case Key.Enter:
+					// Enter is a shortcut for double-clicking the mouse
+					OpenSelected();
+					break;
+				case Key.Left:
+					OnLeftKeyDown(pane);
+					break;
+				case Key.Right:
+					OnRightKeyDown(pane);
 					break;
 			}
 		}
@@ -289,22 +331,6 @@ namespace Winder.App
 				var nextPane = (DirectoryListingPane)_filePanes[_filePanes.IndexOf(pane) + 1];
 				if (nextPane.Items.Count > 0)
 					nextPane.SelectItemAndFocus(0);
-			}
-		}
-
-		private void DirectoryListingPane_KeyDown(object sender, KeyEventArgs e) {
-			var pane = (DirectoryListingPane)sender;
-			switch (e.Key) {
-				case Key.Enter:
-					// Enter is a shortcut for double-clicking the mouse
-					OpenDeepestSelection();
-					break;
-				case Key.Left:
-					OnLeftKeyDown(pane);
-					break;
-				case Key.Right:
-					OnRightKeyDown(pane);
-					break;
 			}
 		}
 

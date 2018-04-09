@@ -19,7 +19,10 @@ namespace Winder.App
 		}
 
 		private static void HandleException(object sender, DispatcherUnhandledExceptionEventArgs e) {
-			Log.Error("Caught exception in dispatcher", e.Exception);
+			Log.Error("Unhandled exception occurred in dispatcher", e.Exception);
+			var errorMessage = $"An unhandled exception occurred: {e.Exception.Message}";
+			MessageBox.Show(errorMessage, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			e.Handled = true;
 		}
 	}
 }
