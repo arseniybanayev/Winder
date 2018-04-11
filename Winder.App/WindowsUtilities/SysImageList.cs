@@ -545,7 +545,7 @@ namespace Winder.App.WindowsUtilities
 		}
 
 		/// <summary>
-		/// Returns the size of the Image List Icons.
+		/// Returns the size of the Image List FileSystemImages.
 		/// </summary>
 		public Size Size {
 			get {
@@ -900,7 +900,7 @@ namespace Winder.App.WindowsUtilities
 		#region Constructor, Dispose, Destructor
 
 		/// <summary>
-		/// Creates a Small Icons SystemImageList 
+		/// Creates a Small FileSystemImages SystemImageList 
 		/// </summary>
 		public SysImageList() {
 			Create();

@@ -1,14 +1,13 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using Winder.App.ViewModels;
+using Winder.App.WindowsUtilities;
 
 namespace Winder.App.Views
 {
 	public class FileInfoPane : Image, IFileSystemPane
 	{
 		private readonly FileViewModel _fileViewModel;
-
-		private static readonly WindowsUtilities.FileToIconConverter Icons = new WindowsUtilities.FileToIconConverter();
 
 		public FileInfoPane(FileViewModel file) {
 			// Basic display and interactivity settings
@@ -17,7 +16,7 @@ namespace Winder.App.Views
 
 			_fileViewModel = file;
 
-			Source = Icons.GetImage(file.FullName, 200);
+			Source = FileSystemImages.GetThumbnail(file.Source);
 		}
 
 		public string FileSystemItemName => _fileViewModel.Name;

@@ -100,8 +100,7 @@
     <Compile Include="Views\DirectoryListingPane.cs" />
     <Compile Include="Views\FileInfoPane.cs" />
     <Compile Include="Views\IFileSystemPane.cs" />
-    <Compile Include="WindowsUtilities\FileToIcon.cs" />
-    <Compile Include="WindowsUtilities\Interop.cs" />
+    <Compile Include="WindowsUtilities\FileSystemImages.cs" />
     <Compile Include="WindowsUtilities\SysImageList.cs" />
     <Content Include="Resources\DirectoryListingItemTemplate.xaml">
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>

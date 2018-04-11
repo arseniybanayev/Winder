@@ -11,7 +11,7 @@
 		<Grid.Resources>
 			<BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 		</Grid.Resources>
-		<Image Source="{Binding SmallImage}"
+		<Image Source="{Binding Icon}"
 			   Width="16" Height="16"
 			   Grid.Column="0" />
 		<TextBlock Text="{Binding Name}"

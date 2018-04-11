@@ -2,6 +2,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
+using Winder.App.WindowsUtilities;
 
 namespace Winder.App.ViewModels
 {
@@ -20,8 +21,7 @@ namespace Winder.App.ViewModels
 
 		protected FileSystemItemViewModel(FileSystemInfo fileSystemInfo) {
 			SourceUntyped = fileSystemInfo;
-			_smallImage = new Lazy<ImageSource>(() => WindowsUtilities.WindowsInterop.GetIcon(SourceUntyped.FullName, IsDirectory, true));
-			_largeImage = new Lazy<ImageSource>(() => WindowsUtilities.WindowsInterop.GetIcon(SourceUntyped.FullName, IsDirectory, false));
+			_icon = new Lazy<ImageSource>(() => FileSystemImages.GetIcon(SourceUntyped));
 		}
 
 		public string Name => SourceUntyped.Name;
@@ -36,11 +36,8 @@ namespace Winder.App.ViewModels
 		public abstract bool IsDirectory { get; }
 		public Visibility VisibleIfDirectory => IsDirectory ? Visibility.Visible : Visibility.Hidden;
 
-		public ImageSource SmallImage => _smallImage.Value;
-		private readonly Lazy<ImageSource> _smallImage;
-
-		public ImageSource LargeImage => _largeImage.Value;
-		private readonly Lazy<ImageSource> _largeImage;
+		public ImageSource Icon => _icon.Value;
+		private readonly Lazy<ImageSource> _icon;
 
 		public FileSystemInfo SourceUntyped { get; }
 	}
