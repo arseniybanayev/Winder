@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 
-namespace Winder
+namespace Winder.App.ViewModels
 {
 	public class DirectoryViewModel : FileSystemItemViewModel
 	{

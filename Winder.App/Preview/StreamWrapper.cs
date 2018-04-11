@@ -3,7 +3,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 
-namespace Winder.Preview
+namespace Winder.App.Preview
 {
 	/// <summary>
 	/// Very simple wrapper class implementation for the IStream interface.

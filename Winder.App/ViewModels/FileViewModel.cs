@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace Winder
+namespace Winder.App.ViewModels
 {
 	public class FileViewModel : FileSystemItemViewModel
 	{

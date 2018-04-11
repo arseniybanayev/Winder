@@ -1,16 +1,14 @@
-﻿using System;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using Winder.Preview;
+using Winder.App.ViewModels;
 
 namespace Winder.App.Views
 {
-	public class FileInfoPane : Image, IFileSystemPane, IDisposable
+	public class FileInfoPane : Image, IFileSystemPane
 	{
 		private readonly FileViewModel _fileViewModel;
-		private readonly PreviewHandlerControl _previewHandlerControl;
 
-		private static readonly FileToIconConverter Icons = new FileToIconConverter();
+		private static readonly WindowsUtilities.FileToIconConverter Icons = new WindowsUtilities.FileToIconConverter();
 
 		public FileInfoPane(FileViewModel file) {
 			// Basic display and interactivity settings
@@ -21,8 +19,6 @@ namespace Winder.App.Views
 
 			Source = Icons.GetImage(file.FullName, 200);
 		}
-
-		public void Dispose() => _previewHandlerControl?.Unload();
 
 		public string FileSystemItemName => _fileViewModel.Name;
 	}

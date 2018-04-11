@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Winder.Preview.ComInterop
+namespace Winder.App.Preview.ComInterop
 {
 	[StructLayout(LayoutKind.Sequential)]
 	public struct MSG

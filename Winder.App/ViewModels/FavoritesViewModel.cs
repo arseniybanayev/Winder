@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using Winder.Util;
 
-namespace Winder
+namespace Winder.App.ViewModels
 {
 	public class FavoritesViewModel
 	{

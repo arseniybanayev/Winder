@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Winder.Preview.ComInterop
+namespace Winder.App.Preview.ComInterop
 {
 	[ComImport]
 	[Guid("00000114-0000-0000-C000-000000000046")]

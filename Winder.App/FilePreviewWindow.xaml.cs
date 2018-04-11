@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Interop;
-using Winder.Preview;
+using Winder.App.Preview;
 
 namespace Winder.App
 {

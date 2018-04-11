@@ -56,6 +56,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -79,9 +80,29 @@
     <Compile Include="FilePreviewWindow.xaml.cs">
       <DependentUpon>FilePreviewWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Preview\ComInterop\COLORREF.cs" />
+    <Compile Include="Preview\ComInterop\IInitializeWithFile.cs" />
+    <Compile Include="Preview\ComInterop\IInitializeWithStream.cs" />
+    <Compile Include="Preview\ComInterop\IObjectWithSite.cs" />
+    <Compile Include="Preview\ComInterop\IOleWindow.cs" />
+    <Compile Include="Preview\ComInterop\IPreviewHandler.cs" />
+    <Compile Include="Preview\ComInterop\IPreviewHandlerFrame.cs" />
+    <Compile Include="Preview\ComInterop\IPreviewHandlerVisuals.cs" />
+    <Compile Include="Preview\ComInterop\LOGFONT.cs" />
+    <Compile Include="Preview\ComInterop\MSG.cs" />
+    <Compile Include="Preview\ComInterop\RECT.cs" />
+    <Compile Include="Preview\PreviewHandlerControl.cs" />
+    <Compile Include="Preview\StreamWrapper.cs" />
+    <Compile Include="ViewModels\DirectoryViewModel.cs" />
+    <Compile Include="ViewModels\FavoritesViewModel.cs" />
+    <Compile Include="ViewModels\FileSystemItemViewModel.cs" />
+    <Compile Include="ViewModels\FileViewModel.cs" />
     <Compile Include="Views\DirectoryListingPane.cs" />
     <Compile Include="Views\FileInfoPane.cs" />
     <Compile Include="Views\IFileSystemPane.cs" />
+    <Compile Include="WindowsUtilities\FileToIcon.cs" />
+    <Compile Include="WindowsUtilities\Interop.cs" />
+    <Compile Include="WindowsUtilities\SysImageList.cs" />
     <Content Include="Resources\DirectoryListingItemTemplate.xaml">
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -148,10 +169,7 @@
       <Project>{5586F221-13C2-4859-9B4E-1E69865A5620}</Project>
       <Name>Winder.Util</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Winder\Winder.csproj">
-      <Project>{E088F30C-BB04-44CB-A63D-5242B02117B7}</Project>
-      <Name>Winder</Name>
-    </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

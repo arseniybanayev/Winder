@@ -1,14 +1,14 @@
 using System;
 using System.IO;
-using Winder.Preview.ComInterop;
-using Microsoft.Win32;
-using System.Threading.Tasks;
-using Winder.Util;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Win32;
+using Winder.App.Preview.ComInterop;
+using Winder.Util;
 
-namespace Winder.Preview
+namespace Winder.App.Preview
 {
 	/// <summary>
 	/// Given a <see cref="FileInfo"/>, this control is responsible for loading
@@ -89,13 +89,6 @@ namespace Winder.Preview
 			}
 		}
 
-		//private void OnResize(object sender, EventArgs e) {
-		//	if ((_previewHandlerLazy?.IsValueCreated ?? false) && _previewHandlerLazy.Value != null) {
-		//		var rect = GetCurrentRect();
-		//		_previewHandlerLazy.Value.SetRect(ref rect);
-		//	}
-		//}
-
 		/// <summary>
 		/// Starts a task in the background to load the preview handler, and then
 		/// signals the UI thread to draw the preview.
@@ -139,13 +132,17 @@ namespace Winder.Preview
 				? new Guid(Convert.ToString(test.GetValue(null)))
 				: Guid.Empty;
 		}
-		
+
 		private RECT GetCurrentRect() {
+			var dpiMatrix = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+			var dpiWidthFactor = dpiMatrix.M11;
+			var dpiHeightFactor = dpiMatrix.M22;
+
 			RECT rect;
 			rect.top = 0;
-			rect.bottom = (int)(ActualHeight * PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice.M11);
+			rect.bottom = (int)(ActualHeight * dpiHeightFactor);
 			rect.left = 0;
-			rect.right = (int)(ActualWidth * PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice.M11);
+			rect.right = (int)(ActualWidth * dpiWidthFactor);
 			return rect;
 		}
 	}

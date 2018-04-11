@@ -3,7 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media;
 
-namespace Winder
+namespace Winder.App.ViewModels
 {
 	public abstract class FileSystemItemViewModel
 	{
@@ -20,8 +20,8 @@ namespace Winder
 
 		protected FileSystemItemViewModel(FileSystemInfo fileSystemInfo) {
 			SourceUntyped = fileSystemInfo;
-			_smallImage = new Lazy<ImageSource>(() => WindowsInterop.GetIcon(SourceUntyped.FullName, IsDirectory, true));
-			_largeImage = new Lazy<ImageSource>(() => WindowsInterop.GetIcon(SourceUntyped.FullName, IsDirectory, false));
+			_smallImage = new Lazy<ImageSource>(() => WindowsUtilities.WindowsInterop.GetIcon(SourceUntyped.FullName, IsDirectory, true));
+			_largeImage = new Lazy<ImageSource>(() => WindowsUtilities.WindowsInterop.GetIcon(SourceUntyped.FullName, IsDirectory, false));
 		}
 
 		public string Name => SourceUntyped.Name;

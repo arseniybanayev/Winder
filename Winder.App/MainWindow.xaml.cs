@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Winder.App.Properties;
+using Winder.App.ViewModels;
 using Winder.App.Views;
 using Winder.Util;
 
@@ -158,8 +159,7 @@ namespace Winder.App
 					directoryPane.KeyDown -= DirectoryListingPane_KeyDown;
 					directoryPane.SelectionChanged -= DirectoryListingPane_SelectionChanged;
 					break;
-				case FileInfoPane filePane:
-					filePane.Dispose();
+				case FileInfoPane _:
 					break;
 				default:
 					throw new NotSupportedException($"{pane.GetType()} was an unexpected Pane");
