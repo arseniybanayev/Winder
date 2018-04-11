@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Controls;
 using Winder.App.ViewModels;
 using Winder.App.WindowsUtilities;
@@ -19,6 +20,18 @@ namespace Winder.App.Views
 			Source = FileSystemImages.GetThumbnail(file.Source);
 		}
 
-		public string FileSystemItemName => _fileViewModel.Name;
+		private static readonly string[] ByteSuffixes = {"B", "KB", "MB", "GB", "TB", "PB", "EB"}; // Longs run out around EB
+
+		public string FileSizeString {
+			get {
+				var byteCount = _fileViewModel.Source.Length;
+				if (byteCount == 0)
+					return "0" + ByteSuffixes[0];
+				var bytes = Math.Abs(byteCount);
+				var place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
+				var num = Math.Round(bytes / Math.Pow(1024, place), 1);
+				return $"{Math.Sign(byteCount) * num}{ByteSuffixes[place]}";
+			}
+		}
 	}
 }
