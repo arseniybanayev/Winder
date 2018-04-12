@@ -60,7 +60,6 @@
 					   DockPanel.Dock="Top"
 					   Height="25"
 					   Background="Transparent"
-
 					   MouseDown="TitleBar_MouseDown">
                 <Button x:Name="CloseButton"
 						DockPanel.Dock="Left"

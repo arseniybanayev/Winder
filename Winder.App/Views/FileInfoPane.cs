@@ -6,7 +6,7 @@ using Winder.App.WindowsUtilities;
 
 namespace Winder.App.Views
 {
-	public class FileInfoPane : Image, IFileSystemPane
+	public class FileInfoPane : Grid, IFileSystemPane
 	{
 		private readonly FileViewModel _fileViewModel;
 
@@ -17,7 +17,22 @@ namespace Winder.App.Views
 
 			_fileViewModel = file;
 
-			Source = FileSystemImages.GetThumbnail(file.Source);
+			// File preview image
+			RowDefinitions.Add(new RowDefinition { Height = new GridLength(3, GridUnitType.Star) });
+			var previewImage = new Image();
+			previewImage.HorizontalAlignment = HorizontalAlignment.Stretch;
+			previewImage.SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
+			previewImage.Source = FileSystemImages.GetThumbnail(file.Source);
+			SetRow(previewImage, 0);
+			Children.Add(previewImage);
+
+			// File details
+			RowDefinitions.Add(new RowDefinition { Height = new GridLength(2, GridUnitType.Star) });
+			var sizeLabel = new Label();
+			sizeLabel.HorizontalAlignment = HorizontalAlignment.Center;
+			sizeLabel.Content = $"Size: {FileSizeString}";
+			SetRow(sizeLabel, 1);
+			Children.Add(sizeLabel);
 		}
 
 		private static readonly string[] ByteSuffixes = {"B", "KB", "MB", "GB", "TB", "PB", "EB"}; // Longs run out around EB
