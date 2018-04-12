@@ -9,6 +9,11 @@ namespace Winder.Util
 {
 	public static class FileExtensions
 	{
+		public static bool IsReallyHidden(this FileSystemInfo fileOrDirectory) {
+			return fileOrDirectory.Attributes.HasFlag(FileAttributes.Hidden)
+				|| (fileOrDirectory.Name?.StartsWith(".") ?? false);
+		}
+
 		public static DriveInfo GetDriveInfo(this FileInfo file) {
 			return file.Directory.GetDriveInfo();
 		}
