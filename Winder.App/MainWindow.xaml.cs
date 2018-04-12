@@ -334,6 +334,9 @@ namespace Winder.App
 				case Key.Right:
 					OnRightKeyDown(pane);
 					break;
+				//case Key.Apps:
+				//	pane.ToggleContextMenuOnSelectedItem();
+				//	break;
 			}
 		}
 
