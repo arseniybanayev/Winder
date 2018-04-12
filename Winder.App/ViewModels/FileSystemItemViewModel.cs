@@ -24,8 +24,23 @@ namespace Winder.App.ViewModels
 			_icon = new Lazy<ImageSource>(() => FileSystemImages.GetIcon(SourceUntyped));
 		}
 
+		/// <summary>
+		/// For files, gets the name of the file.
+		/// For directories, gets the name of the last directory in the hierarchy if the hierarchy exists.
+		/// Otherwise, the Name property gets the name of the directory.
+		/// </summary>
 		public string Name => SourceUntyped.Name;
 
+		public string DisplayName {
+			get {
+				if (SourceUntyped is DirectoryInfo)
+					return SourceUntyped.Name;
+				if (SourceUntyped.Attributes.HasFlag(FileAttributes.Hidden))
+					return SourceUntyped.Name;
+				return Path.GetFileNameWithoutExtension(SourceUntyped.Name);
+			}
+		}
+		
 		/// <summary>
 		/// Gets the full path of the directory or file.
 		/// </summary>

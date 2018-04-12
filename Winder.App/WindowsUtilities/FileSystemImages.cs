@@ -10,6 +10,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Winder.Util;
 
 namespace Winder.App.WindowsUtilities
 {
@@ -20,23 +21,32 @@ namespace Winder.App.WindowsUtilities
 		/// </summary>
 		public static ImageSource GetThumbnail(FileSystemInfo fileOrDirectory) {
 			switch (fileOrDirectory) {
-				// At this size, images are shown as full image previews
-				case FileInfo file when IsImage(file): {
-					return ThumbnailCacheByFileSystemInfo.GetOrAdd(file, f => {
-						var bitmap = new WriteableBitmap(LoadBitmap(LoadJumbo(f)));
-						ThreadPool.QueueUserWorkItem(ImageThumbnailCallback, new ThumbnailInfo(bitmap, f, IconSize.Thumbnail));
-						return bitmap;
-					});
-				}
-				// Executables and directories can have their own icons
-				case FileInfo file when IsExecutable(file):
+				// Executables and directories can have individual icons
+				// Images are shown as full image previews, which are individual
+				case FileInfo file when IsExecutable(file) || IsImage(file):
 				case DirectoryInfo _: {
-					return ThumbnailCacheByFileSystemInfo.GetOrAdd(fileOrDirectory, fd => LoadBitmap(LoadJumbo(fd)));
-				}
+						return ThumbnailCacheByFileSystemInfo.GetOrAdd(fileOrDirectory, fd => GetThumbnailNoCache(fd));
+					}
 				// Every other type of file can be cached by extension
 				default: {
-					return ThumbnailCacheByExtension.GetOrAdd(fileOrDirectory.Extension.ToLower(), _ => LoadBitmap(LoadJumbo(fileOrDirectory)));
+						return ThumbnailCacheByExtension.GetOrAdd(fileOrDirectory.Extension.ToLower(), _ => GetThumbnailNoCache(fileOrDirectory));
+					}
+			}
+		}
+
+		private static ImageSource GetThumbnailNoCache(FileSystemInfo fileOrDirectory) {
+			try {
+				// At this size, images are shown as full image previews
+				if (fileOrDirectory is FileInfo file && IsImage(file)) {
+					var bitmap = new WriteableBitmap(LoadBitmap(LoadJumbo(file)));
+					ThreadPool.QueueUserWorkItem(ImageThumbnailCallback, new ThumbnailInfo(bitmap, file, IconSize.Thumbnail));
+					return bitmap;
 				}
+
+				return LoadBitmap(LoadJumbo(fileOrDirectory));
+			} catch (Exception e) {
+				Log.Error($"Failed to get thumbnail for {fileOrDirectory.FullName}", e);
+				return null;
 			}
 		}
 
@@ -48,21 +58,30 @@ namespace Winder.App.WindowsUtilities
 		/// </summary>
 		public static ImageSource GetIcon(FileSystemInfo fileOrDirectory) {
 			switch (fileOrDirectory) {
-				// Executables and directories can have their own icons
+				// Executables and directories can have individual icons
 				case FileInfo file when IsExecutable(file):
 				case DirectoryInfo _: {
-					return IconCacheByFileSystemInfo.GetOrAdd(fileOrDirectory, fd => LoadBitmap(LoadJumbo(fd)));
-				}
+						return IconCacheByFileSystemInfo.GetOrAdd(fileOrDirectory, fd => GetIconNoCache(fd));
+					}
 				// Every other type of file can be cached by extension
 				default: {
-					return IconCacheByExtension.GetOrAdd(fileOrDirectory.Extension.ToLower(), ext => LoadBitmap(LoadJumbo(fileOrDirectory)));
-				}
+						return IconCacheByExtension.GetOrAdd(fileOrDirectory.Extension.ToLower(), ext => GetIconNoCache(fileOrDirectory));
+					}
+			}
+		}
+
+		private static ImageSource GetIconNoCache(FileSystemInfo fileOrDirectory) {
+			try {
+				return LoadBitmap(GetLargeFileIcon(fileOrDirectory).ToBitmap());
+			} catch (Exception e) {
+				Log.Error($"Failed to get icon for {fileOrDirectory.FullName}", e);
+				return null;
 			}
 		}
 
 		private static readonly ConcurrentDictionary<string, ImageSource> IconCacheByExtension = new ConcurrentDictionary<string, ImageSource>();
 		private static readonly ConcurrentDictionary<FileSystemInfo, ImageSource> IconCacheByFileSystemInfo = new ConcurrentDictionary<FileSystemInfo, ImageSource>();
-
+		
 		private enum IconSize
 		{
 			Small,
@@ -88,8 +107,49 @@ namespace Winder.App.WindowsUtilities
 		#region Win32 API
 
 		[DllImport("gdi32.dll")]
-		public static extern bool DeleteObject(IntPtr hObject);
-		
+		private static extern bool DeleteObject(IntPtr hObject);
+
+		[StructLayout(LayoutKind.Sequential)]
+		private struct Shfileinfo
+		{
+			public IntPtr hIcon;
+			public IntPtr iIcon;
+			public uint dwAttributes;
+			[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string szDisplayName;
+			[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)] public string szTypeName;
+		};
+
+		private static uint ShgfiIcon = 0x100;
+		private static uint ShgfiSysiconindex = 16384;
+		private static uint ShgfiUsefileattributes = 16;
+
+		/// <summary>
+		/// Get Icons that are associated with files.
+		/// To use it, use (System.Drawing.Icon myIcon = System.Drawing.Icon.FromHandle(shinfo.hIcon));
+		/// hImgSmall = SHGetFileInfo(fName, 0, ref shinfo,(uint)Marshal.SizeOf(shinfo),Win32.SHGFI_ICON |Win32.SHGFI_SMALLICON);
+		/// </summary>
+		[DllImport("shell32.dll")]
+		private static extern IntPtr SHGetFileInfo(string pszPath, uint dwFileAttributes,
+			ref Shfileinfo psfi, uint cbSizeFileInfo, uint uFlags);
+
+		/// <summary>
+		/// Return large file icon of the specified file.
+		/// </summary>
+		private static Icon GetLargeFileIcon(FileSystemInfo fileOrDirectory) {
+			var shinfo = new Shfileinfo();
+
+			var flags = ShgfiSysiconindex;
+			if (fileOrDirectory.FullName.IndexOf(":") == -1)
+				flags = flags | ShgfiUsefileattributes;
+			else flags = flags | ShgfiIcon;
+
+			var result = SHGetFileInfo(fileOrDirectory.FullName, 0, ref shinfo, (uint)Marshal.SizeOf(shinfo), flags);
+			if (result == IntPtr.Zero) {
+				var x = 4;
+			}
+			return Icon.FromHandle(shinfo.hIcon);
+		}
+
 		#endregion
 
 		private static void CopyBitmap(BitmapSource source, WriteableBitmap target, bool dispatcher) {

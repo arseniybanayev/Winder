@@ -60,6 +60,7 @@
   <ItemGroup>
     <Compile Include="EnumerableExtensions.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="FileExtensions.cs" />
     <Compile Include="FileUtil.cs" />
     <Compile Include="LazyConcurrentDictionary.cs" />
     <Compile Include="Log.cs" />

@@ -9,7 +9,8 @@
         AllowsTransparency="True"
         Background="Transparent"
 		MaxWidth="{Binding Source={x:Static SystemParameters.WorkArea}, Path=Width}"
-		MaxHeight="{Binding Source={x:Static SystemParameters.WorkArea}, Path=Height}">
+		MaxHeight="{Binding Source={x:Static SystemParameters.WorkArea}, Path=Height}"
+		Closing="Window_Closing">
 	<Window.Resources>
         <!-- Used for the list box item selection. Looks like Finder -->
         <Style TargetType="{x:Type ListBoxItem}">

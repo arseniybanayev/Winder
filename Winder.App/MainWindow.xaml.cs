@@ -59,12 +59,14 @@ namespace Winder.App
 			SetTitle(directoryListing.ViewModel.Name);
 
 			var selectedCount = directoryListing.SelectedItems.Count;
+			var availableFreeSpace = directoryListing.ViewModel.Source.GetDriveInfo().AvailableFreeSpace;
+			var availableFreeSpaceString = availableFreeSpace.ToByteSuffixString();
 			if (selectedCount > 1) {
 				// More than one item selected in the deepest directory listing
-				SetStatus($"{selectedCount} of {directoryListing.ViewModel.Children.Count} selected, ? GB available");
+				SetStatus($"{selectedCount} of {directoryListing.ViewModel.Children.Count} selected, {availableFreeSpaceString} available");
 			} else {
 				// One item or no items selected
-				SetStatus($"{directoryListing.ViewModel.Children.Count} items, ? GB available");
+				SetStatus($"{directoryListing.ViewModel.Children.Count} items, {availableFreeSpaceString} available");
 			}
 		}
 
@@ -251,15 +253,46 @@ namespace Winder.App
 			}
 		}
 
-		private void PreviewSelected() {
+		private FilePreviewWindow _previewWindow;
+
+		private void TogglePreview() {
+			if (_previewWindow != null) {
+				_previewWindow.Close();
+				return;
+			}
+
 			var allSelectedItems = GetDeepestSelection().Item2;
 			var selectedFiles = allSelectedItems.OfType<FileViewModel>().ToList();
 			Log.Info($"Opening preview for {selectedFiles.Count} files (out of {allSelectedItems.Count} total selected items):");
 			foreach (var file in selectedFiles.Take(1)) {
 				Log.Info($"  {file.FullName}");
-				var previewWindow = new FilePreviewWindow(file.Source);
-				previewWindow.Show();
+				_previewWindow = new FilePreviewWindow(file.Source);
+				_previewWindow.ContentRendered += PreviewWindow_ContentRendered;
+				_previewWindow.Show();
 			}
+		}
+
+		private void PreviewWindow_ContentRendered(object sender, EventArgs e) {
+			_previewWindow.KeyDown += PreviewWindow_KeyDown;
+		}
+
+		private void PreviewWindow_KeyDown(object sender, KeyEventArgs e) {
+			if (_previewWindow == null || !_previewWindow.IsLoaded)
+				return;
+			switch (e.Key) {
+				case Key.Space:
+					ClosePreview();
+					break;
+			}
+		}
+
+		private void ClosePreview() {
+			if (_previewWindow == null)
+				return;
+			_previewWindow.ContentRendered -= PreviewWindow_ContentRendered;
+			_previewWindow.KeyDown -= PreviewWindow_KeyDown;
+			_previewWindow.Close();
+			_previewWindow = null;
 		}
 
 		#endregion
@@ -275,7 +308,7 @@ namespace Winder.App
 			switch (e.Key) {
 				case Key.Space:
 					// Space opens the preview pane
-					PreviewSelected();
+					TogglePreview();
 					break;
 				case Key.Left:
 					OnLeftKeyDown(pane);
@@ -376,5 +409,8 @@ namespace Winder.App
 
 		#endregion
 
+		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+			ClosePreview();
+		}
 	}
 }
