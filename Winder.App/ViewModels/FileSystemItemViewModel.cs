@@ -37,6 +37,8 @@ namespace Winder.App.ViewModels
 					return SourceUntyped.Name;
 				if (SourceUntyped.Attributes.HasFlag(FileAttributes.Hidden))
 					return SourceUntyped.Name;
+				if (SourceUntyped.Name.StartsWith("."))
+					return SourceUntyped.Name;
 				return Path.GetFileNameWithoutExtension(SourceUntyped.Name);
 			}
 		}
