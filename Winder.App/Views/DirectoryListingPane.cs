@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Markup;
 using Winder.App.ViewModels;
 
@@ -27,7 +28,7 @@ namespace Winder.App.Views
 				) as DataTemplate;
 			ItemTemplate = itemTemplate;
 		}
-		
+
 		internal void SelectItem(int index) {
 			SelectedIndex = index;
 		}

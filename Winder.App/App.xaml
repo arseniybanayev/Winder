@@ -8,8 +8,5 @@
 		<BitmapImage x:Key="WindowCloseIcon" UriSource="Resources/WindowCloseIcon.png" />
 		<BitmapImage x:Key="WindowMinimizeIcon" UriSource="Resources/WindowMinimizeIcon.png" />
 		<BitmapImage x:Key="WindowMaximizeIcon" UriSource="Resources/WindowMaximizeIcon.png" />
-		<!--<ContextMenu x:Key="DirectoryListingItemContextMenu">
-			<MenuItem Header="Item1" />
-		</ContextMenu>-->
 	</Application.Resources>
 </Application>

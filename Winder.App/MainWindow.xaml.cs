@@ -224,7 +224,7 @@ namespace Winder.App
 
 			UpdateTitleAndStatus();
 		}
-
+		
 		private Tuple<int, IReadOnlyList<FileSystemItemViewModel>> GetDeepestSelection() {
 			for (var i = _filePanes.Count - 1; i >= 0; i--) {
 				if (!(_filePanes[i] is DirectoryListingPane directory))
@@ -235,6 +235,57 @@ namespace Winder.App
 			}
 
 			return Tuple.Create(-1, Enumerable.Empty<FileSystemItemViewModel>().ToReadOnlyList());
+		}
+
+		#endregion
+
+		#region Directory Listing Context Menu
+
+		public void DirectoryListingPane_Item_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs args) {
+			var listBoxItem = (ListBoxItem)sender;
+			
+			// Select only the item that was right-clicked
+			listBoxItem.GetParentOfType<DirectoryListingPane>().SelectedItem = null;
+			listBoxItem.IsSelected = true;
+
+			// Create and place a context menu for the selected item
+			var selectedItem = (FileSystemItemViewModel)listBoxItem.Content;
+			var contextMenu = BuildNewContextMenu(selectedItem);
+			contextMenu.PlacementTarget = listBoxItem;
+			contextMenu.IsOpen = true;
+		}
+
+		private static ContextMenu BuildNewContextMenu(FileSystemItemViewModel item) {
+			var contextMenu = new ContextMenu();
+			contextMenu.Items.Add(new MenuItem {
+				Header = "Open"
+			});
+
+			// Open With menu item
+			var openWith = new MenuItem {
+				Header = "Open With"
+			};
+			openWith.Items.Add(new MenuItem {
+				Header = "App 1"
+			});
+			contextMenu.Items.Add(openWith);
+
+			contextMenu.Items.Add(new Separator());
+			contextMenu.Items.Add(new MenuItem {
+				Header = "Move to Trash"
+			});
+			contextMenu.Items.Add(new Separator());
+			contextMenu.Items.Add(new MenuItem {
+				Header = "Get Info"
+			});
+			contextMenu.Items.Add(new MenuItem {
+				Header = $"Rename \"{item.DisplayName}\""
+			});
+			contextMenu.Items.Add(new MenuItem {
+				Header = $"Open \"{item.DisplayName}\""
+			});
+
+			return contextMenu;
 		}
 
 		#endregion
@@ -334,9 +385,6 @@ namespace Winder.App
 				case Key.Right:
 					OnRightKeyDown(pane);
 					break;
-				//case Key.Apps:
-				//	pane.ToggleContextMenuOnSelectedItem();
-				//	break;
 			}
 		}
 
@@ -417,3 +465,4 @@ namespace Winder.App
 		}
 	}
 }
+ 

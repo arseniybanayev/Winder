@@ -4,13 +4,6 @@ using System.Linq;
 
 namespace Winder.Util
 {
-	public static class ListExtensions
-	{
-		public static IReadOnlyList<TElement> ToReadOnlyList<TElement>(this IEnumerable<TElement> source) {
-			return source.ToList();
-		}
-	}
-
 	public static class DictionaryExtensions
 	{
 		public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(
