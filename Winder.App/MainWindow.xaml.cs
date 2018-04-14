@@ -261,7 +261,7 @@ namespace Winder.App
 				Header = "Open"
 			});
 
-			// Open With menu item
+			// "Open With" menu item and its children
 			var openWith = new MenuItem {
 				Header = "Open With"
 			};
@@ -270,6 +270,7 @@ namespace Winder.App
 			});
 			contextMenu.Items.Add(openWith);
 
+			// Other menu items
 			contextMenu.Items.Add(new Separator());
 			contextMenu.Items.Add(new MenuItem {
 				Header = "Move to Trash"
@@ -392,8 +393,9 @@ namespace Winder.App
 			if (_filePanes.IndexOf(pane) == 0) {
 				// In the root directory pane, try to move up (which should close deeper panes if open)
 				// and focus on the newly selected item
-				if (pane.SelectedIndex > 0)
-					pane.SelectItemAndFocus(pane.SelectedIndex - 1);
+				// (Note: this is commented out because Finder doesn't do this)
+				// if (pane.SelectedIndex > 0)
+				//	pane.SelectItemAndFocus(pane.SelectedIndex - 1);
 			} else {
 				// If it's not the root pane, deselect everything in this pane (which should close deeper panes)
 				// and focus on the selected item in the previous pane
@@ -465,4 +467,3 @@ namespace Winder.App
 		}
 	}
 }
- 
