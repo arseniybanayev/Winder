@@ -47,19 +47,7 @@ namespace Winder.App.Views
 				return;
 			((ListBoxItem)ItemContainerGenerator.ContainerFromItem(SelectedItem)).Focus();
 		}
-
-		///// <summary>
-		///// Opens the context menu on the first selected item if multiple are selected.
-		///// Does nothing if no item is selected.
-		///// </summary>
-		//internal void ToggleContextMenuOnSelectedItem() {
-		//	if (SelectedItem == null)
-		//		return;
-		//	var contextMenu = FindResource("DirectoryListingItemContextMenu") as ContextMenu;
-		//	contextMenu.PlacementTarget = ((ListBoxItem)ItemContainerGenerator.ContainerFromItem(SelectedItem));
-		//	contextMenu.IsOpen = true;
-		//}
-
+		
 		/// <summary>
 		/// Returns whether the first selected item is focused if multiple are selected.
 		/// Returns false if no item is selected.

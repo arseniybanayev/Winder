@@ -139,7 +139,7 @@ namespace Winder.App
 
 			// Add the pane
 			GridMain.ColumnDefinitions.Add(new ColumnDefinition {
-				Width = new GridLength(300, GridUnitType.Pixel) // Panes' widths are in pixels, but resizable
+				Width = new GridLength(240, GridUnitType.Pixel) // Panes' widths are in pixels, but resizable
 			});
 			Grid.SetColumn((UIElement)pane, GridMain.ColumnDefinitions.Count - 1); // Set column position in the main grid
 			_filePanes.Add(pane); // Add to stack
@@ -258,32 +258,41 @@ namespace Winder.App
 		private static ContextMenu BuildNewContextMenu(FileSystemItemViewModel item) {
 			var contextMenu = new ContextMenu();
 			contextMenu.Items.Add(new MenuItem {
-				Header = "Open"
+				Header = "Open",
+				CommandParameter = item,
+				Command = new DelegateCommand<FileSystemItemViewModel>(i => i.Open())
 			});
-
-			// "Open With" menu item and its children
 			var openWith = new MenuItem {
 				Header = "Open With"
 			};
 			openWith.Items.Add(new MenuItem {
-				Header = "App 1"
+				Header = "App 1..."
 			});
 			contextMenu.Items.Add(openWith);
 
-			// Other menu items
-			contextMenu.Items.Add(new Separator());
+			// Move to trash
 			contextMenu.Items.Add(new MenuItem {
-				Header = "Move to Trash"
+				Header = "Move to Trash",
+				CommandParameter = item,
+				Command = new DelegateCommand<FileSystemItemViewModel>(i => i.MoveToTrash())
 			});
+
+			// Others
 			contextMenu.Items.Add(new Separator());
 			contextMenu.Items.Add(new MenuItem {
 				Header = "Get Info"
 			});
 			contextMenu.Items.Add(new MenuItem {
-				Header = $"Rename \"{item.DisplayName}\""
+				Header = "Rename"
 			});
 			contextMenu.Items.Add(new MenuItem {
-				Header = $"Open \"{item.DisplayName}\""
+				Header = $"Compress \"{item.DisplayName}\""
+			});
+			contextMenu.Items.Add(new MenuItem {
+				Header = "Duplicate"
+			});
+			contextMenu.Items.Add(new MenuItem {
+				Header = "Make Alias"
 			});
 
 			return contextMenu;
@@ -299,10 +308,8 @@ namespace Winder.App
 
 		private void OpenSelected() {
 			var selectedFiles = GetDeepestSelection().Item2;
-			foreach (var file in selectedFiles) {
-				Log.Info($"Opening {file.FullName}");
-				Process.Start(file.SourceUntyped.FullName);
-			}
+			foreach (var file in selectedFiles)
+				file.Open();
 		}
 
 		private FilePreviewWindow _previewWindow;

@@ -31,7 +31,5 @@ namespace Winder.App.ViewModels
 				return Enumerable.Empty<FileSystemInfo>();
 			}
 		}
-
-		public override bool IsDirectory => true;
 	}
 }

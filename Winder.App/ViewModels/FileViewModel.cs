@@ -7,7 +7,5 @@ namespace Winder.App.ViewModels
 		public FileViewModel(FileInfo fileInfo) : base(fileInfo) { }
 
 		public FileInfo Source => (FileInfo)SourceUntyped;
-
-		public override bool IsDirectory => false;
 	}
 }

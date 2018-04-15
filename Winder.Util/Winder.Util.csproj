@@ -61,6 +61,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DelegateCommand.cs" />
     <Compile Include="DependencyObjectExtensions.cs" />
     <Compile Include="EnumerableExtensions.cs" />
     <Compile Include="DictionaryExtensions.cs" />

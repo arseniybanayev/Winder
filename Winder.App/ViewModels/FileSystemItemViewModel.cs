@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using Winder.App.WindowsUtilities;
+using Winder.Util;
 
 namespace Winder.App.ViewModels
 {
@@ -22,6 +24,16 @@ namespace Winder.App.ViewModels
 		protected FileSystemItemViewModel(FileSystemInfo fileSystemInfo) {
 			SourceUntyped = fileSystemInfo;
 			_icon = new Lazy<ImageSource>(() => FileSystemImages.GetIcon(SourceUntyped));
+		}
+
+		public void Open() {
+			Log.Info($"Opening {FullName}");
+			Process.Start(FullName);
+		}
+
+		public void MoveToTrash() {
+			Log.Info($"Moving to trash (recycle bin): {FullName}");
+			FileUtil.SendToRecycleBin(FullName);
 		}
 
 		/// <summary>
@@ -50,7 +62,8 @@ namespace Winder.App.ViewModels
 
 		public string NameWithoutExtension => Path.GetFileNameWithoutExtension(SourceUntyped.FullName);
 
-		public abstract bool IsDirectory { get; }
+		public bool IsDirectory => SourceUntyped is DirectoryInfo;
+
 		public Visibility VisibleIfDirectory => IsDirectory ? Visibility.Visible : Visibility.Hidden;
 
 		public ImageSource Icon => _icon.Value;
