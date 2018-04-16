@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -14,22 +15,32 @@ using Winder.Util;
 
 namespace Winder.App.WindowsUtilities
 {
+	/// <summary>
+	/// Helper functions to retrieve icons and thumbnails for items in the file system
+	/// using Windows shell extensions and interop.
+	/// </summary>
 	public static class FileSystemImages
 	{
 		/// <summary>
 		/// Returns an image containing a thumbnail (larger than icon) for the specified file/directory.
 		/// </summary>
 		public static ImageSource GetThumbnail(NormalizedPath path, bool isDirectory) {
-			// Executables and directories can have individual icons
-			// Images are shown as full image previews, which are individual
-			if (isDirectory || IsExecutable(path) || IsImage(path))
-				return ThumbnailCacheByPath.GetOrAdd(path, p => GetThumbnailUnsafe(p, isDirectory));
-			
-			// Every other type of file can be cached by extension
-			return ThumbnailCacheByExtension.GetOrAdd(Path.GetExtension(path).ToLower(), _ => GetThumbnailUnsafe(path, false));
+			var sw = Stopwatch.StartNew();
+			try {
+				// Executables and directories can have individual icons
+				// Images are shown as full image previews, which are individual
+				if (isDirectory || IsExecutable(path) || IsImage(path))
+					return ThumbnailCacheByPath.GetOrAdd(path, p => GetThumbnailUnsafe(p, isDirectory));
+
+				// Every other type of file can be cached by extension
+				return ThumbnailCacheByExtension.GetOrAdd(path.Extension.ToLower(), _ => GetThumbnailUnsafe(path, false));
+			} finally {
+				Log.Info($"{nameof(GetThumbnail)} took {sw.ElapsedMilliseconds / 1000.0}s for {path}");
+			}
 		}
 
 		private static ImageSource GetThumbnailUnsafe(NormalizedPath path, bool isDirectory) {
+			var sw = Stopwatch.StartNew();
 			try {
 				// At this size, images are shown as full image previews
 				if (!isDirectory && IsImage(path)) {
@@ -42,6 +53,8 @@ namespace Winder.App.WindowsUtilities
 			} catch (Exception e) {
 				Log.Error($"Failed to get thumbnail for {path}", e);
 				return null;
+			} finally {
+				Log.Info($"{nameof(GetThumbnailUnsafe)} took {sw.ElapsedMilliseconds / 1000.0}s for {path}");
 			}
 		}
 
@@ -52,20 +65,32 @@ namespace Winder.App.WindowsUtilities
 		/// Returns an image containing an icon (smaller than thumbnail) for the specified file/directory.
 		/// </summary>
 		public static ImageSource GetIcon(NormalizedPath path, bool isDirectory) {
-			// Executables and directories can have individual icons
-			if (isDirectory || IsExecutable(path))
-				return IconCacheByPath.GetOrAdd(path, p => GetIconUnsafe(p, isDirectory));
-			
-			// Every other type of file can be cached by extension
-			return IconCacheByExtension.GetOrAdd(Path.GetExtension(path).ToLower(), _ => GetIconUnsafe(path, false));
+			var sw = Stopwatch.StartNew();
+			try {
+				// Executables and directories can have individual icons
+				if (isDirectory || IsExecutable(path))
+					return IconCacheByPath.GetOrAdd(path, p => GetIconUnsafe(p, isDirectory));
+
+				// Every other type of file can be cached by extension
+				return IconCacheByExtension.GetOrAdd(path.Extension.ToLower(), _ => GetIconUnsafe(path, false));
+			} finally {
+				Log.Info($"{nameof(GetIcon)} took {sw.ElapsedMilliseconds / 1000.0}s for {path}");
+			}
 		}
 
-		private static ImageSource GetIconUnsafe(string normalizedPath, bool isDirectory) {
+		private static ImageSource GetIconUnsafe(NormalizedPath path, bool isDirectory) {
+			var sw = Stopwatch.StartNew();
 			try {
-				return LoadBitmap(GetLargeFileIcon(normalizedPath).ToBitmap());
+				var largeFileIcon = GetLargeFileIcon(path, isDirectory);
+				var sw2 = Stopwatch.StartNew();
+				var bitmap = largeFileIcon.ToBitmap();
+				Log.Info($"{nameof(largeFileIcon.ToBitmap)} took {sw2.ElapsedMilliseconds / 1000.0}s for {path}");
+				return LoadBitmap(bitmap);
 			} catch (Exception e) {
-				Log.Error($"Failed to get icon for {normalizedPath}", e);
+				Log.Error($"Failed to get icon for {path}", e);
 				return null;
+			} finally {
+				Log.Info($"{nameof(GetIconUnsafe)} took {sw.ElapsedMilliseconds / 1000.0}s for {path}");
 			}
 		}
 
@@ -100,7 +125,7 @@ namespace Winder.App.WindowsUtilities
 		private static extern bool DeleteObject(IntPtr hObject);
 
 		[StructLayout(LayoutKind.Sequential)]
-		private struct Shfileinfo
+		private struct SHFILEINFO
 		{
 			public IntPtr hIcon;
 			public IntPtr iIcon;
@@ -109,32 +134,30 @@ namespace Winder.App.WindowsUtilities
 			[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)] public string szTypeName;
 		};
 
-		private static uint ShgfiIcon = 0x100;
-		private static uint ShgfiSysiconindex = 16384;
-		private static uint ShgfiUsefileattributes = 16;
+		private const uint SHGFI_ICON = 0x100;
+		private const uint SHGFI_USEFILEATTRIBUTES = 0x10;
+		private const uint FileIconFlags = SHGFI_USEFILEATTRIBUTES | SHGFI_ICON;
 
-		/// <summary>
-		/// Get Icons that are associated with files.
-		/// To use it, use (System.Drawing.Icon myIcon = System.Drawing.Icon.FromHandle(shinfo.hIcon));
-		/// hImgSmall = SHGetFileInfo(fName, 0, ref shinfo,(uint)Marshal.SizeOf(shinfo),Win32.SHGFI_ICON |Win32.SHGFI_SMALLICON);
-		/// </summary>
+		private const uint FILE_ATTRIBUTE_DIRECTORY = 0x10;
+		private const uint FILE_ATTRIBUTE_NORMAL = 0x80;
+		
 		[DllImport("shell32.dll")]
-		private static extern IntPtr SHGetFileInfo(string pszPath, uint dwFileAttributes,
-			ref Shfileinfo psfi, uint cbSizeFileInfo, uint uFlags);
+		private static extern IntPtr SHGetFileInfo(string pszPath, uint dwFileAttributes, ref SHFILEINFO psfi, uint cbSizeFileInfo, uint uFlags);
 
 		/// <summary>
 		/// Return large file icon of the specified file.
 		/// </summary>
-		private static Icon GetLargeFileIcon(string normalizedPath) {
-			var shinfo = new Shfileinfo();
-
-			var flags = ShgfiSysiconindex;
-			if (normalizedPath.IndexOf(":") == -1)
-				flags = flags | ShgfiUsefileattributes;
-			else flags = flags | ShgfiIcon;
-
-			var result = SHGetFileInfo(normalizedPath, 0, ref shinfo, (uint)Marshal.SizeOf(shinfo), flags);
-			return Icon.FromHandle(shinfo.hIcon);
+		private static Icon GetLargeFileIcon(NormalizedPath path, bool isDirectory) {
+			var sw = Stopwatch.StartNew();
+			try {
+				// https://www.codeguru.com/cpp/com-tech/shell/article.php/c4511/Tuning-SHGetFileInfo-for-Optimum-Performance.htm
+				var shinfo = new SHFILEINFO();
+				var attr = isDirectory ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
+				var result = SHGetFileInfo(path, attr, ref shinfo, (uint)Marshal.SizeOf(shinfo), FileIconFlags);
+				return Icon.FromHandle(shinfo.hIcon);
+			} finally {
+				Log.Info($"{nameof(GetLargeFileIcon)} took {sw.ElapsedMilliseconds / 1000.0}s for {path}");
+			}
 		}
 
 		#endregion
@@ -195,16 +218,16 @@ namespace Winder.App.WindowsUtilities
 			float nPercentW = 0;
 			float nPercentH = 0;
 
-			nPercentW = ((float)size.Width / (float)sourceWidth);
-			nPercentH = ((float)size.Height / (float)sourceHeight);
+			nPercentW = (float)size.Width / (float)sourceWidth;
+			nPercentH = (float)size.Height / (float)sourceHeight;
 
 			if (nPercentH < nPercentW)
 				nPercent = nPercentH;
 			else
 				nPercent = nPercentW;
 
-			var destWidth = (int)((sourceWidth * nPercent) - spacing * 4);
-			var destHeight = (int)((sourceHeight * nPercent) - spacing * 4);
+			var destWidth = (int)(sourceWidth * nPercent - spacing * 4);
+			var destHeight = (int)(sourceHeight * nPercent - spacing * 4);
 
 			var leftOffset = (int)((size.Width - destWidth) / 2);
 			var topOffset = (int)((size.Height - destHeight) / 2);
@@ -239,8 +262,8 @@ namespace Winder.App.WindowsUtilities
 			float nPercentW = 0;
 			float nPercentH = 0;
 
-			nPercentW = ((float)size.Width / (float)sourceWidth);
-			nPercentH = ((float)size.Height / (float)sourceHeight);
+			nPercentW = (float)size.Width / (float)sourceWidth;
+			nPercentH = (float)size.Height / (float)sourceHeight;
 
 			if (nPercentH < nPercentW)
 				nPercent = nPercentH;
@@ -276,12 +299,21 @@ namespace Winder.App.WindowsUtilities
 		}
 
 		private static BitmapSource LoadBitmap(Bitmap source) {
-			var hBitmap = source.GetHbitmap();
-			// http://social.msdn.microsoft.com/forums/en-US/wpf/thread/edcf2482-b931-4939-9415-15b3515ddac6/
+			// https://stackoverflow.com/a/1546121/4589192
+			var sw = Stopwatch.StartNew();
 			try {
-				return Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+				var hBitmap = source.GetHbitmap();
+				var sw2 = Stopwatch.StartNew();
+				try {
+					return Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+				} finally {
+					Log.Info($"{nameof(Imaging.CreateBitmapSourceFromHBitmap)} took {sw2.ElapsedMilliseconds / 1000.0}s");
+					var sw3 = Stopwatch.StartNew();
+					DeleteObject(hBitmap);
+					Log.Info($"{nameof(DeleteObject)} took {sw3.ElapsedMilliseconds / 1000.0}s");
+				}
 			} finally {
-				DeleteObject(hBitmap);
+				Log.Info($"{nameof(LoadBitmap)} took {sw.ElapsedMilliseconds / 1000.0}s");
 			}
 		}
 

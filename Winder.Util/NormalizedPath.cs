@@ -20,8 +20,7 @@ namespace Winder.Util
 		}
 
 		public override bool Equals(object obj) {
-			var path = obj as NormalizedPath;
-			if (path == null)
+			if (!(obj is NormalizedPath path))
 				return false; // because 'this' is not null
 			return string.Equals(this.Value, path.Value, StringComparison.CurrentCultureIgnoreCase);
 		}
@@ -29,6 +28,8 @@ namespace Winder.Util
 		public override int GetHashCode() {
 			return StringComparer.CurrentCultureIgnoreCase.GetHashCode(this.Value);
 		}
+
+		public override string ToString() => Value;
 	}
 
 	public static class NormalizedPathExtensions
