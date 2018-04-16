@@ -39,6 +39,25 @@ namespace Winder.App.WindowsUtilities
 			}
 		}
 
+		/// <summary>
+		/// Returns an image containing an icon (smaller than thumbnail) for the specified file/directory.
+		/// </summary>
+		public static ImageSource GetIcon(NormalizedPath path, bool isDirectory) {
+			var sw = Stopwatch.StartNew();
+			try {
+				// Executables and directories can have individual icons
+				if (isDirectory || IsExecutable(path))
+					return IconCacheByPath.GetOrAdd(path, p => GetIconUnsafe(p, isDirectory));
+
+				// Every other type of file can be cached by extension
+				return IconCacheByExtension.GetOrAdd(path.Extension.ToLower(), _ => GetIconUnsafe(path, false));
+			} finally {
+				Log.Info($"{nameof(GetIcon)} took {sw.ElapsedMilliseconds / 1000.0}s for {path}");
+			}
+		}
+
+		#region Implementation
+
 		private static ImageSource GetThumbnailUnsafe(NormalizedPath path, bool isDirectory) {
 			var sw = Stopwatch.StartNew();
 			try {
@@ -58,26 +77,6 @@ namespace Winder.App.WindowsUtilities
 			}
 		}
 
-		private static readonly ConcurrentDictionary<string, ImageSource> ThumbnailCacheByExtension = new ConcurrentDictionary<string, ImageSource>();
-		private static readonly ConcurrentDictionary<NormalizedPath, ImageSource> ThumbnailCacheByPath = new ConcurrentDictionary<NormalizedPath, ImageSource>();
-
-		/// <summary>
-		/// Returns an image containing an icon (smaller than thumbnail) for the specified file/directory.
-		/// </summary>
-		public static ImageSource GetIcon(NormalizedPath path, bool isDirectory) {
-			var sw = Stopwatch.StartNew();
-			try {
-				// Executables and directories can have individual icons
-				if (isDirectory || IsExecutable(path))
-					return IconCacheByPath.GetOrAdd(path, p => GetIconUnsafe(p, isDirectory));
-
-				// Every other type of file can be cached by extension
-				return IconCacheByExtension.GetOrAdd(path.Extension.ToLower(), _ => GetIconUnsafe(path, false));
-			} finally {
-				Log.Info($"{nameof(GetIcon)} took {sw.ElapsedMilliseconds / 1000.0}s for {path}");
-			}
-		}
-
 		private static ImageSource GetIconUnsafe(NormalizedPath path, bool isDirectory) {
 			var sw = Stopwatch.StartNew();
 			try {
@@ -93,6 +92,9 @@ namespace Winder.App.WindowsUtilities
 				Log.Info($"{nameof(GetIconUnsafe)} took {sw.ElapsedMilliseconds / 1000.0}s for {path}");
 			}
 		}
+
+		private static readonly ConcurrentDictionary<string, ImageSource> ThumbnailCacheByExtension = new ConcurrentDictionary<string, ImageSource>();
+		private static readonly ConcurrentDictionary<NormalizedPath, ImageSource> ThumbnailCacheByPath = new ConcurrentDictionary<NormalizedPath, ImageSource>();
 
 		private static readonly ConcurrentDictionary<string, ImageSource> IconCacheByExtension = new ConcurrentDictionary<string, ImageSource>();
 		private static readonly ConcurrentDictionary<NormalizedPath, ImageSource> IconCacheByPath = new ConcurrentDictionary<NormalizedPath, ImageSource>();
@@ -119,7 +121,7 @@ namespace Winder.App.WindowsUtilities
 			}
 		}
 
-		#region Win32 API
+		#region Win32 API / Shell Interop
 
 		[DllImport("gdi32.dll")]
 		private static extern bool DeleteObject(IntPtr hObject);
@@ -319,22 +321,22 @@ namespace Winder.App.WindowsUtilities
 
 		private static readonly HashSet<string> ImageExtensions = new HashSet<string>(new[] { ".jpg", ".jpeg", ".png", ".gif" });
 		
-		private static bool IsImage(string normalizedPath) {
-			var ext = Path.GetExtension(normalizedPath).ToLower();
-			return !string.IsNullOrWhiteSpace(ext) && ImageExtensions.Contains(ext) && File.Exists(normalizedPath);
+		private static bool IsImage(NormalizedPath path) {
+			var ext = path.Extension.ToLower();
+			return !string.IsNullOrWhiteSpace(ext) && ImageExtensions.Contains(ext) && File.Exists(path);
 		}
 
 		private static readonly HashSet<string> ExecutableExtensions = new HashSet<string>(new[] { ".exe", ".lnk" });
 
-		private static bool IsExecutable(string normalizedPath) {
-			var ext = Path.GetExtension(normalizedPath).ToLower();
-			return !string.IsNullOrWhiteSpace(ext) && ExecutableExtensions.Contains(ext) && File.Exists(normalizedPath);
+		private static bool IsExecutable(NormalizedPath path) {
+			var ext = path.Extension.ToLower();
+			return !string.IsNullOrWhiteSpace(ext) && ExecutableExtensions.Contains(ext) && File.Exists(path);
 		}
 
 		private static readonly SysImageList ImgList = new SysImageList(SysImageListSize.Jumbo);
 
 		private static Bitmap LoadJumbo(string normalizedPath, bool isDirectory) {
-			ImgList.ImageListSize = IsVistaUp() ? SysImageListSize.Jumbo : SysImageListSize.ExtraLargeIcons;
+			ImgList.ImageListSize = IsRunningVista.Value ? SysImageListSize.Jumbo : SysImageListSize.ExtraLargeIcons;
 			var icon = ImgList.Icon(ImgList.IconIndex(normalizedPath, isDirectory));
 			var bitmap = icon.ToBitmap();
 			icon.Dispose();
@@ -350,7 +352,9 @@ namespace Winder.App.WindowsUtilities
 
 			return bitmap;
 		}
-		
+
+		private static readonly Lazy<bool> IsRunningVista = new Lazy<bool>(() => Environment.OSVersion.Version.Major >= 6);
+
 		private static void ImageThumbnailCallback(object state) {
 			//Non UIThread
 			var input = state as ThumbnailInfo;
@@ -368,7 +372,8 @@ namespace Winder.App.WindowsUtilities
 			} catch { }
 		}
 
-		public static bool IsVistaUp() => Environment.OSVersion.Version.Major >= 6;
+		#endregion
+
 	}
 }
  

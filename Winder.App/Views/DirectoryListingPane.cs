@@ -26,6 +26,8 @@ namespace Winder.App.Views
 				new FileStream("Resources/DirectoryListingItemTemplate.xaml", FileMode.Open)
 				) as DataTemplate;
 			ItemTemplate = itemTemplate;
+
+			ItemContainerStyle = (Style)Application.Current.MainWindow?.Resources["DirectoryListingItemStyle"];
 		}
 
 		internal void SelectItem(int index) {

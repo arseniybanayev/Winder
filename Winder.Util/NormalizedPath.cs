@@ -6,9 +6,22 @@ namespace Winder.Util
 	public class NormalizedPath
 	{
 		public NormalizedPath(string path) {
-			Value = string.IsNullOrWhiteSpace(path)
-				? null
-				: Path.GetFullPath(new Uri(path).LocalPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			if (string.IsNullOrWhiteSpace(path)) {
+				Value = null;
+				return;
+			}
+
+			var normalizedPath = Path.GetFullPath(new Uri(Path.GetFullPath(path)).LocalPath);
+
+			// Remove trailing directory separator chars (like '\' or '/')
+			var trimmed = normalizedPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+			// Add back a trailing directory separator char if it now ends with a volume separator char (like ':')
+			// Otherwise it won't point to a volume
+			if (trimmed.EndsWith(Path.VolumeSeparatorChar.ToString()))
+				trimmed += Path.DirectorySeparatorChar;
+
+			Value = trimmed;
 		}
 
 		public string Value { get; }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -24,9 +23,7 @@ namespace Winder.App
 			});
 
 			// Set up the favorites pane
-			var favorites = FavoritesViewModel.Load(Settings.Default.FavoritePaths?.Cast<string>().Select(p => p.ToNormalizedPath()));
-			favorites.CollectionChanged += Favorites_CollectionChanged;
-			ListBoxFavorites.ItemsSource = favorites.FavoriteDirectories;
+			ListBoxFavorites.ItemsSource = FavoritesViewModel.Default.FavoriteDirectories;
 
 			// Set up the opening directory
 			var newWindowPath = Settings.Default.NewWindowPath.ToNormalizedPath();
@@ -70,14 +67,7 @@ namespace Winder.App
 		}
 
 		#region Favorites Pane
-
-		private static void Favorites_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-			var stringCollection = new StringCollection();
-			stringCollection.AddRange(((FavoritesViewModel)sender).FavoriteDirectories.Select(d => d.Path.Value).ToArray());
-			Settings.Default.FavoritePaths = stringCollection;
-			Settings.Default.Save();
-		}
-
+		
 		private void ListBoxFavorites_PreviewKeyDown(object sender, KeyEventArgs e) {
 			switch (e.Key) {
 				case Key.Left:
@@ -101,6 +91,11 @@ namespace Winder.App
 			favorites.SelectedIndex = -1; // Make it seem like you can't select in Favorites
 			PopPanesUntil(-1);
 			PushPane(selectedDirectory);
+		}
+		
+		private void ListBoxFavorites_OnDrop(object sender, DragEventArgs e) {
+			var path = (string)e.Data.GetData("Path");
+			FavoritesViewModel.Default.FavoriteDirectories.Add(FileSystemManager.GetDirectoryViewModel(path.ToNormalizedPath()));
 		}
 
 		#endregion
@@ -138,7 +133,7 @@ namespace Winder.App
 
 			// Add the pane
 			GridMain.ColumnDefinitions.Add(new ColumnDefinition {
-				Width = new GridLength(240, GridUnitType.Pixel) // Panes' widths are in pixels, but resizable
+				Width = new GridLength(260, GridUnitType.Pixel) // Panes' widths are in pixels, but resizable
 			});
 			Grid.SetColumn((UIElement)pane, GridMain.ColumnDefinitions.Count - 1); // Set column position in the main grid
 			_filePanes.Add(pane); // Add to stack
@@ -240,7 +235,7 @@ namespace Winder.App
 
 		#region Directory Listing Context Menu
 
-		public void DirectoryListingPane_Item_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs args) {
+		private void DirectoryListingPane_Item_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs args) {
 			var listBoxItem = (ListBoxItem)sender;
 			
 			// Select only the item that was right-clicked
@@ -295,6 +290,22 @@ namespace Winder.App
 			});
 
 			return contextMenu;
+		}
+
+		#endregion
+
+		#region Directory Listing Drag/Drop
+
+		private void DirectoryListingPane_Item_MouseMove(object sender, MouseEventArgs e) {
+			if (e.LeftButton != MouseButtonState.Pressed)
+				return;
+
+			var listBoxItem = (ListBoxItem)sender;
+			var selectedItem = (FileSystemItemViewModel)listBoxItem.Content;
+
+			var data = new DataObject();
+			data.SetData("Path", selectedItem.Path.ToString());
+			DragDrop.DoDragDrop(listBoxItem, data, DragDropEffects.Copy);
 		}
 
 		#endregion
