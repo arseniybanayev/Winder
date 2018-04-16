@@ -24,13 +24,13 @@ namespace Winder.App
 				DefaultValue = FindResource(typeof(Window))
 			});
 
-			// Set up the favorites pan 
-			var favorites = FavoritesViewModel.Load(Settings.Default.FavoritePaths?.Cast<string>());
+			// Set up the favorites pane
+			var favorites = FavoritesViewModel.Load(Settings.Default.FavoritePaths?.Cast<string>().Select(p => p.ToNormalizedPath()));
 			favorites.CollectionChanged += Favorites_CollectionChanged;
 			ListBoxFavorites.ItemsSource = favorites.FavoriteDirectories;
 
 			// Set up the opening directory
-			var newWindowPath = Settings.Default.NewWindowPath;
+			var newWindowPath = Settings.Default.NewWindowPath.ToNormalizedPath();
 			if (string.IsNullOrWhiteSpace(newWindowPath) || !Directory.Exists(newWindowPath)) {
 				newWindowPath = FileUtil.GetUserProfilePath();
 				Settings.Default.NewWindowPath = newWindowPath;
@@ -38,7 +38,7 @@ namespace Winder.App
 			}
 
 			// Open the opening directory
-			PushPane(FileSystemItemViewModel.Create(new DirectoryInfo(Settings.Default.NewWindowPath)));
+			PushPane(FileSystemManager.GetDirectoryViewModel(Settings.Default.NewWindowPath.ToNormalizedPath()));
 		}
 
 		private void SetTitle(string title) {
@@ -56,10 +56,10 @@ namespace Winder.App
 		private void UpdateTitleAndStatus() {
 			var directoryListing = _filePanes.OfType<DirectoryListingPane>().Last(); // At least the root will always be there
 
-			SetTitle(directoryListing.ViewModel.Name);
+			SetTitle(directoryListing.ViewModel.DisplayName);
 
 			var selectedCount = directoryListing.SelectedItems.Count;
-			var availableFreeSpace = directoryListing.ViewModel.Source.GetDriveInfo().AvailableFreeSpace;
+			var availableFreeSpace = directoryListing.ViewModel.Info.GetDriveInfo().AvailableFreeSpace;
 			var availableFreeSpaceString = availableFreeSpace.ToByteSuffixString();
 			if (selectedCount > 1) {
 				// More than one item selected in the deepest directory listing
@@ -74,7 +74,7 @@ namespace Winder.App
 
 		private static void Favorites_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
 			var stringCollection = new StringCollection();
-			stringCollection.AddRange(((FavoritesViewModel)sender).FavoriteDirectories.Select(c => c.FullName).ToArray());
+			stringCollection.AddRange(((FavoritesViewModel)sender).FavoriteDirectories.Select(d => d.Path.Value).ToArray());
 			Settings.Default.FavoritePaths = stringCollection;
 			Settings.Default.Save();
 		}
@@ -324,8 +324,8 @@ namespace Winder.App
 			var selectedFiles = allSelectedItems.OfType<FileViewModel>().ToList();
 			Log.Info($"Opening preview for {selectedFiles.Count} files (out of {allSelectedItems.Count} total selected items):");
 			foreach (var file in selectedFiles.Take(1)) {
-				Log.Info($"  {file.FullName}");
-				_previewWindow = new FilePreviewWindow(file.Source);
+				Log.Info($"  {file.Path}");
+				_previewWindow = new FilePreviewWindow(file.Info);
 				_previewWindow.ContentRendered += PreviewWindow_ContentRendered;
 				_previewWindow.Show();
 			}

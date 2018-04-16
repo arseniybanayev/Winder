@@ -11,50 +11,60 @@ namespace Winder.Util
 		/// <summary>
 		/// Returns the %USERPROFILE% variable value (usually the home directory).
 		/// </summary>
-		public static string GetUserProfilePath() {
-			return Environment.GetEnvironmentVariable("USERPROFILE");
+		public static NormalizedPath GetUserProfilePath() {
+			return Environment.GetEnvironmentVariable("USERPROFILE").ToNormalizedPath();
 		}
 
 		/// <summary>
 		/// If the extension of `file` is ".lnk" then returns the target of the shortcut.
 		/// Otherwise, returns `file`.
 		/// </summary>
-		public static string GetShortcutTarget(string file) {
-			if (Path.GetExtension(file)?.ToLower().Equals(".lnk", StringComparison.OrdinalIgnoreCase) != true)
+		public static NormalizedPath GetShortcutTarget(NormalizedPath file) {
+			if (file == null)
+				return file;
+
+			if (file.Extension?.ToLower().Equals(".lnk", StringComparison.OrdinalIgnoreCase) != true)
 				return file;
 
 			var shellObjectType = Type.GetTypeFromProgID("WScript.Shell");
 			dynamic windowsShell = Activator.CreateInstance(shellObjectType);
-			var shortcut = windowsShell.CreateShortcut(file);
+			var shortcut = windowsShell.CreateShortcut(file.Value);
 			var targetPath = shortcut.TargetPath;
 
 			// Release the COM objects
 			shortcut = null;
 			windowsShell = null;
-			return targetPath;
+			return (targetPath as string).ToNormalizedPath();
 		}
 
 		/// <summary>
 		/// Returns a set of favorite directories from the Links subdirectory of the user profile path.
 		/// </summary>
-		public static IEnumerable<DirectoryInfo> GetFavoritesFromUserLinks() {
+		public static IEnumerable<NormalizedPath> GetFavoritesFromUserLinks() {
 			var userProfilePath = GetUserProfilePath();
 			if (userProfilePath == null || !Directory.Exists(userProfilePath)) {
 				Log.Info("Could not get a valid directory from system environment variable USERPROFILE");
-				return Enumerable.Empty<DirectoryInfo>();
+				return Enumerable.Empty<NormalizedPath>();
 			}
 
-			var path = Path.Combine(userProfilePath, "Links");
+			var path = Path.Combine(userProfilePath, "Links").ToNormalizedPath();
 			if (!Directory.Exists(path)) {
 				Log.Info($"Could not find Links directory in user profile path {userProfilePath}");
-				return Enumerable.Empty<DirectoryInfo>();
+				return Enumerable.Empty<NormalizedPath>();
 			}
 
 			var links = new DirectoryInfo(path).GetFiles().Where(f => f.Extension.ToLower() == ".lnk");
-			return links.Select(lnk => GetShortcutTarget(lnk.FullName))
+			return links.Select(lnk => GetShortcutTarget(lnk.FullName.ToNormalizedPath()))
 				.Where(tgt => !string.IsNullOrWhiteSpace(tgt)) // Things like "Recent Places"
 				.Where(tgt => File.GetAttributes(tgt).HasFlag(FileAttributes.Directory)) // Slow
-				.Select(tgt => new DirectoryInfo(tgt));
+				.Distinct()
+				.ToList();
+		}
+
+		public static string NormalizePath(string path) {
+			return Path
+				.GetFullPath(new Uri(path).LocalPath)
+				.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 		}
 
 		#region Recycle Bin

@@ -129,7 +129,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="{Binding Name}"
+                                <TextBlock Text="{Binding DisplayName}"
                                            TextTrimming="CharacterEllipsis" Margin="8,0,8,0"
                                            Grid.Column="0" />
                             </Grid>

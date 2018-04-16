@@ -19,68 +19,62 @@ namespace Winder.App.WindowsUtilities
 		/// <summary>
 		/// Returns an image containing a thumbnail (larger than icon) for the specified file/directory.
 		/// </summary>
-		public static ImageSource GetThumbnail(FileSystemInfo fileOrDirectory) {
-			switch (fileOrDirectory) {
-				// Executables and directories can have individual icons
-				// Images are shown as full image previews, which are individual
-				case FileInfo file when IsExecutable(file) || IsImage(file):
-				case DirectoryInfo _: {
-						return ThumbnailCacheByFileSystemInfo.GetOrAdd(fileOrDirectory, fd => GetThumbnailNoCache(fd));
-					}
-				// Every other type of file can be cached by extension
-				default: {
-						return ThumbnailCacheByExtension.GetOrAdd(fileOrDirectory.Extension.ToLower(), _ => GetThumbnailNoCache(fileOrDirectory));
-					}
-			}
+		public static ImageSource GetThumbnail(string path, bool isDirectory) {
+			path = FileUtil.NormalizePath(path);
+
+			// Executables and directories can have individual icons
+			// Images are shown as full image previews, which are individual
+			if (isDirectory || IsExecutable(path) || IsImage(path))
+				return ThumbnailCacheByNormalizedPath.GetOrAdd(path, p => GetThumbnailUnsafe(p, isDirectory));
+			
+			// Every other type of file can be cached by extension
+			return ThumbnailCacheByExtension.GetOrAdd(Path.GetExtension(path).ToLower(), _ => GetThumbnailUnsafe(path, false));
 		}
 
-		private static ImageSource GetThumbnailNoCache(FileSystemInfo fileOrDirectory) {
+		private static ImageSource GetThumbnailUnsafe(string normalizedPath, bool isDirectory) {
 			try {
 				// At this size, images are shown as full image previews
-				if (fileOrDirectory is FileInfo file && IsImage(file)) {
-					var bitmap = new WriteableBitmap(LoadBitmap(LoadJumbo(file)));
-					ThreadPool.QueueUserWorkItem(ImageThumbnailCallback, new ThumbnailInfo(bitmap, file, IconSize.Thumbnail));
+				if (!isDirectory && IsImage(normalizedPath)) {
+					var bitmap = new WriteableBitmap(LoadBitmap(LoadJumbo(normalizedPath, false)));
+					ThreadPool.QueueUserWorkItem(ImageThumbnailCallback, new ThumbnailInfo(bitmap, normalizedPath, IconSize.Thumbnail));
 					return bitmap;
 				}
 
-				return LoadBitmap(LoadJumbo(fileOrDirectory));
+				return LoadBitmap(LoadJumbo(normalizedPath, isDirectory));
 			} catch (Exception e) {
-				Log.Error($"Failed to get thumbnail for {fileOrDirectory.FullName}", e);
+				Log.Error($"Failed to get thumbnail for {normalizedPath}", e);
 				return null;
 			}
 		}
 
 		private static readonly ConcurrentDictionary<string, ImageSource> ThumbnailCacheByExtension = new ConcurrentDictionary<string, ImageSource>();
-		private static readonly ConcurrentDictionary<FileSystemInfo, ImageSource> ThumbnailCacheByFileSystemInfo = new ConcurrentDictionary<FileSystemInfo, ImageSource>();
+		private static readonly ConcurrentDictionary<string, ImageSource> ThumbnailCacheByNormalizedPath = new ConcurrentDictionary<string, ImageSource>();
 
 		/// <summary>
 		/// Returns an image containing an icon (smaller than thumbnail) for the specified file/directory.
 		/// </summary>
-		public static ImageSource GetIcon(FileSystemInfo fileOrDirectory) {
-			switch (fileOrDirectory) {
-				// Executables and directories can have individual icons
-				case FileInfo file when IsExecutable(file):
-				case DirectoryInfo _: {
-						return IconCacheByFileSystemInfo.GetOrAdd(fileOrDirectory, fd => GetIconNoCache(fd));
-					}
-				// Every other type of file can be cached by extension
-				default: {
-						return IconCacheByExtension.GetOrAdd(fileOrDirectory.Extension.ToLower(), ext => GetIconNoCache(fileOrDirectory));
-					}
-			}
+		public static ImageSource GetIcon(string path, bool isDirectory) {
+			path = FileUtil.NormalizePath(path);
+
+			// Executables and directories can have individual icons
+			if (isDirectory || IsExecutable(path))
+				return IconCacheByFileSystemInfo.GetOrAdd(path, p => GetIconUnsafe(p, isDirectory));
+			
+			// Every other type of file can be cached by extension
+			return IconCacheByExtension.GetOrAdd(Path.GetExtension(path).ToLower(), _ => GetIconUnsafe(path, false));
 		}
 
-		private static ImageSource GetIconNoCache(FileSystemInfo fileOrDirectory) {
+		private static ImageSource GetIconUnsafe(string normalizedPath, bool isDirectory) {
 			try {
-				return LoadBitmap(GetLargeFileIcon(fileOrDirectory).ToBitmap());
+				return LoadBitmap(GetLargeFileIcon(normalizedPath).ToBitmap());
 			} catch (Exception e) {
-				Log.Error($"Failed to get icon for {fileOrDirectory.FullName}", e);
+				Log.Error($"Failed to get icon for {normalizedPath}", e);
 				return null;
 			}
 		}
 
 		private static readonly ConcurrentDictionary<string, ImageSource> IconCacheByExtension = new ConcurrentDictionary<string, ImageSource>();
-		private static readonly ConcurrentDictionary<FileSystemInfo, ImageSource> IconCacheByFileSystemInfo = new ConcurrentDictionary<FileSystemInfo, ImageSource>();
+		private static readonly ConcurrentDictionary<string, ImageSource> IconCacheByFileSystemInfo = new ConcurrentDictionary<string, ImageSource>();
 		
 		private enum IconSize
 		{
@@ -94,12 +88,12 @@ namespace Winder.App.WindowsUtilities
 		private class ThumbnailInfo
 		{
 			public readonly IconSize Iconsize;
-			public readonly FileSystemInfo FileOrDirectory;
+			public readonly string NormalizedPath;
 			public readonly WriteableBitmap Bitmap;
 
-			public ThumbnailInfo(WriteableBitmap b, FileSystemInfo fileOrDirectory, IconSize size) {
+			public ThumbnailInfo(WriteableBitmap b, string normalizedPath, IconSize size) {
 				Bitmap = b;
-				FileOrDirectory = fileOrDirectory;
+				NormalizedPath = normalizedPath;
 				Iconsize = size;
 			}
 		}
@@ -135,18 +129,15 @@ namespace Winder.App.WindowsUtilities
 		/// <summary>
 		/// Return large file icon of the specified file.
 		/// </summary>
-		private static Icon GetLargeFileIcon(FileSystemInfo fileOrDirectory) {
+		private static Icon GetLargeFileIcon(string normalizedPath) {
 			var shinfo = new Shfileinfo();
 
 			var flags = ShgfiSysiconindex;
-			if (fileOrDirectory.FullName.IndexOf(":") == -1)
+			if (normalizedPath.IndexOf(":") == -1)
 				flags = flags | ShgfiUsefileattributes;
 			else flags = flags | ShgfiIcon;
 
-			var result = SHGetFileInfo(fileOrDirectory.FullName, 0, ref shinfo, (uint)Marshal.SizeOf(shinfo), flags);
-			if (result == IntPtr.Zero) {
-				var x = 4;
-			}
+			var result = SHGetFileInfo(normalizedPath, 0, ref shinfo, (uint)Marshal.SizeOf(shinfo), flags);
 			return Icon.FromHandle(shinfo.hIcon);
 		}
 
@@ -300,23 +291,23 @@ namespace Winder.App.WindowsUtilities
 
 		private static readonly HashSet<string> ImageExtensions = new HashSet<string>(new[] { ".jpg", ".jpeg", ".png", ".gif" });
 		
-		private static bool IsImage(FileInfo fileInfo) {
-			var ext = fileInfo.Extension.ToLower();
-			return !string.IsNullOrWhiteSpace(ext) && ImageExtensions.Contains(ext) && fileInfo.Exists;
+		private static bool IsImage(string normalizedPath) {
+			var ext = Path.GetExtension(normalizedPath).ToLower();
+			return !string.IsNullOrWhiteSpace(ext) && ImageExtensions.Contains(ext) && File.Exists(normalizedPath);
 		}
 
 		private static readonly HashSet<string> ExecutableExtensions = new HashSet<string>(new[] { ".exe", ".lnk" });
 
-		private static bool IsExecutable(FileInfo fileInfo) {
-			var ext = fileInfo.Extension.ToLower();
-			return !string.IsNullOrWhiteSpace(ext) && ExecutableExtensions.Contains(ext) && fileInfo.Exists;
+		private static bool IsExecutable(string normalizedPath) {
+			var ext = Path.GetExtension(normalizedPath).ToLower();
+			return !string.IsNullOrWhiteSpace(ext) && ExecutableExtensions.Contains(ext) && File.Exists(normalizedPath);
 		}
 
 		private static readonly SysImageList ImgList = new SysImageList(SysImageListSize.Jumbo);
 
-		private static Bitmap LoadJumbo(FileSystemInfo fileOrDirectory) {
+		private static Bitmap LoadJumbo(string normalizedPath, bool isDirectory) {
 			ImgList.ImageListSize = IsVistaUp() ? SysImageListSize.Jumbo : SysImageListSize.ExtraLargeIcons;
-			var icon = ImgList.Icon(ImgList.IconIndex(fileOrDirectory.FullName, fileOrDirectory is DirectoryInfo));
+			var icon = ImgList.Icon(ImgList.IconIndex(normalizedPath, isDirectory));
 			var bitmap = icon.ToBitmap();
 			icon.Dispose();
 
@@ -326,7 +317,7 @@ namespace Winder.App.WindowsUtilities
 				bitmap = ResizeImage(bitmap, new System.Drawing.Size(256, 256), 0);
 			else if (bitmap.GetPixel(100, 100) == empty && bitmap.GetPixel(200, 200) == empty && bitmap.GetPixel(200, 200) == empty) {
 				ImgList.ImageListSize = SysImageListSize.LargeIcons;
-				bitmap = ResizeJumbo(ImgList.Icon(ImgList.IconIndex(fileOrDirectory.FullName)).ToBitmap(), new System.Drawing.Size(200, 200), 5);
+				bitmap = ResizeJumbo(ImgList.Icon(ImgList.IconIndex(normalizedPath)).ToBitmap(), new System.Drawing.Size(200, 200), 5);
 			}
 
 			return bitmap;
@@ -339,7 +330,7 @@ namespace Winder.App.WindowsUtilities
 			var size = input.Iconsize;
 
 			try {
-				var origBitmap = new Bitmap(input.FileOrDirectory.FullName);
+				var origBitmap = new Bitmap(input.NormalizedPath);
 				var inputBitmap = ResizeImage(origBitmap, GetDefaultSize(size), 5);
 				var inputBitmapSource = LoadBitmap(inputBitmap);
 				origBitmap.Dispose();

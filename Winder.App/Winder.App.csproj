@@ -96,6 +96,7 @@
     <Compile Include="ViewModels\DirectoryViewModel.cs" />
     <Compile Include="ViewModels\FavoritesViewModel.cs" />
     <Compile Include="ViewModels\FileSystemItemViewModel.cs" />
+    <Compile Include="ViewModels\FileSystemManager.cs" />
     <Compile Include="ViewModels\FileViewModel.cs" />
     <Compile Include="Views\DirectoryListingPane.cs" />
     <Compile Include="Views\FileInfoPane.cs" />

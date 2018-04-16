@@ -10,65 +10,29 @@ namespace Winder.App.ViewModels
 {
 	public abstract class FileSystemItemViewModel
 	{
-		public static FileSystemItemViewModel Create(FileSystemInfo fileSystemInfo) {
-			switch (fileSystemInfo) {
-				case DirectoryInfo directoryInfo:
-					return new DirectoryViewModel(directoryInfo);
-				case FileInfo fileInfo:
-					return new FileViewModel(fileInfo);
-				default:
-					throw new NotSupportedException($"{nameof(FileSystemItemViewModel)} doesn't support {fileSystemInfo.GetType().Name}");
-			}
+		protected FileSystemItemViewModel(NormalizedPath path) {
+			Path = path;
 		}
 
-		protected FileSystemItemViewModel(FileSystemInfo fileSystemInfo) {
-			SourceUntyped = fileSystemInfo;
-			_icon = new Lazy<ImageSource>(() => FileSystemImages.GetIcon(SourceUntyped));
-		}
+		public NormalizedPath Path { get; }
+
+		public abstract FileSystemInfo FileSystemInfo { get; }
+		public bool IsDirectory => FileSystemInfo is DirectoryInfo;
+
+		public Visibility VisibleIfDirectory => IsDirectory ? Visibility.Visible : Visibility.Hidden;
+		public abstract string DisplayName { get; }
 
 		public void Open() {
-			Log.Info($"Opening {FullName}");
-			Process.Start(FullName);
+			Log.Info($"Opening {Path}");
+			Process.Start(Path);
 		}
 
 		public void MoveToTrash() {
-			Log.Info($"Moving to trash (recycle bin): {FullName}");
-			FileUtil.SendToRecycleBin(FullName);
-		}
-
-		/// <summary>
-		/// For files, gets the name of the file.
-		/// For directories, gets the name of the last directory in the hierarchy if the hierarchy exists.
-		/// Otherwise, the Name property gets the name of the directory.
-		/// </summary>
-		public string Name => SourceUntyped.Name;
-
-		public string DisplayName {
-			get {
-				if (SourceUntyped is DirectoryInfo)
-					return SourceUntyped.Name;
-				if (SourceUntyped.Attributes.HasFlag(FileAttributes.Hidden))
-					return SourceUntyped.Name;
-				if (SourceUntyped.Name.StartsWith("."))
-					return SourceUntyped.Name;
-				return Path.GetFileNameWithoutExtension(SourceUntyped.Name);
-			}
+			Log.Info($"Moving to trash (recycle bin): {Path}");
+			FileUtil.SendToRecycleBin(Path);
 		}
 		
-		/// <summary>
-		/// Gets the full path of the directory or file.
-		/// </summary>
-		public string FullName => SourceUntyped.FullName;
-
-		public string NameWithoutExtension => Path.GetFileNameWithoutExtension(SourceUntyped.FullName);
-
-		public bool IsDirectory => SourceUntyped is DirectoryInfo;
-
-		public Visibility VisibleIfDirectory => IsDirectory ? Visibility.Visible : Visibility.Hidden;
-
 		public ImageSource Icon => _icon.Value;
-		private readonly Lazy<ImageSource> _icon;
-
-		public FileSystemInfo SourceUntyped { get; }
+		protected Lazy<ImageSource> _icon;
 	}
 }

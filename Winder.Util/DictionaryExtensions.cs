@@ -27,5 +27,11 @@ namespace Winder.Util
 			this IEnumerable<KeyValuePair<TKey, TValue>> source) {
 			return source.ToDictionary(kv => kv.Key, kv => kv.Value);
 		}
+
+		public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> source, TKey key, Func<TKey, TValue> valueFactory) {
+			if (!source.ContainsKey(key))
+				source[key] = valueFactory(key);
+			return source[key];
+		}
 	}
 }

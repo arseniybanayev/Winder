@@ -23,7 +23,7 @@ namespace Winder.App.Views
 			var previewImage = new Image();
 			previewImage.HorizontalAlignment = HorizontalAlignment.Stretch;
 			previewImage.SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
-			previewImage.Source = FileSystemImages.GetThumbnail(file.Source);
+			previewImage.Source = FileSystemImages.GetThumbnail(file.Path, false);
 			SetRow(previewImage, 0);
 			Children.Add(previewImage);
 
@@ -31,16 +31,9 @@ namespace Winder.App.Views
 			RowDefinitions.Add(new RowDefinition { Height = new GridLength(2, GridUnitType.Star) });
 			var sizeLabel = new Label();
 			sizeLabel.HorizontalAlignment = HorizontalAlignment.Center;
-			sizeLabel.Content = $"Size: {FileSizeString}";
+			sizeLabel.Content = $"Size: {file.FileSize}";
 			SetRow(sizeLabel, 1);
 			Children.Add(sizeLabel);
-		}
-
-		public string FileSizeString {
-			get {
-				var byteCount = _fileViewModel.Source.Length;
-				return byteCount.ToByteSuffixString();
-			}
 		}
 	}
 }
