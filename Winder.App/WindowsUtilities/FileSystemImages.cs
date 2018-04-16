@@ -19,46 +19,42 @@ namespace Winder.App.WindowsUtilities
 		/// <summary>
 		/// Returns an image containing a thumbnail (larger than icon) for the specified file/directory.
 		/// </summary>
-		public static ImageSource GetThumbnail(string path, bool isDirectory) {
-			path = FileUtil.NormalizePath(path);
-
+		public static ImageSource GetThumbnail(NormalizedPath path, bool isDirectory) {
 			// Executables and directories can have individual icons
 			// Images are shown as full image previews, which are individual
 			if (isDirectory || IsExecutable(path) || IsImage(path))
-				return ThumbnailCacheByNormalizedPath.GetOrAdd(path, p => GetThumbnailUnsafe(p, isDirectory));
+				return ThumbnailCacheByPath.GetOrAdd(path, p => GetThumbnailUnsafe(p, isDirectory));
 			
 			// Every other type of file can be cached by extension
 			return ThumbnailCacheByExtension.GetOrAdd(Path.GetExtension(path).ToLower(), _ => GetThumbnailUnsafe(path, false));
 		}
 
-		private static ImageSource GetThumbnailUnsafe(string normalizedPath, bool isDirectory) {
+		private static ImageSource GetThumbnailUnsafe(NormalizedPath path, bool isDirectory) {
 			try {
 				// At this size, images are shown as full image previews
-				if (!isDirectory && IsImage(normalizedPath)) {
-					var bitmap = new WriteableBitmap(LoadBitmap(LoadJumbo(normalizedPath, false)));
-					ThreadPool.QueueUserWorkItem(ImageThumbnailCallback, new ThumbnailInfo(bitmap, normalizedPath, IconSize.Thumbnail));
+				if (!isDirectory && IsImage(path)) {
+					var bitmap = new WriteableBitmap(LoadBitmap(LoadJumbo(path, false)));
+					ThreadPool.QueueUserWorkItem(ImageThumbnailCallback, new ThumbnailInfo(bitmap, path, IconSize.Thumbnail));
 					return bitmap;
 				}
 
-				return LoadBitmap(LoadJumbo(normalizedPath, isDirectory));
+				return LoadBitmap(LoadJumbo(path, isDirectory));
 			} catch (Exception e) {
-				Log.Error($"Failed to get thumbnail for {normalizedPath}", e);
+				Log.Error($"Failed to get thumbnail for {path}", e);
 				return null;
 			}
 		}
 
 		private static readonly ConcurrentDictionary<string, ImageSource> ThumbnailCacheByExtension = new ConcurrentDictionary<string, ImageSource>();
-		private static readonly ConcurrentDictionary<string, ImageSource> ThumbnailCacheByNormalizedPath = new ConcurrentDictionary<string, ImageSource>();
+		private static readonly ConcurrentDictionary<NormalizedPath, ImageSource> ThumbnailCacheByPath = new ConcurrentDictionary<NormalizedPath, ImageSource>();
 
 		/// <summary>
 		/// Returns an image containing an icon (smaller than thumbnail) for the specified file/directory.
 		/// </summary>
-		public static ImageSource GetIcon(string path, bool isDirectory) {
-			path = FileUtil.NormalizePath(path);
-
+		public static ImageSource GetIcon(NormalizedPath path, bool isDirectory) {
 			// Executables and directories can have individual icons
 			if (isDirectory || IsExecutable(path))
-				return IconCacheByFileSystemInfo.GetOrAdd(path, p => GetIconUnsafe(p, isDirectory));
+				return IconCacheByPath.GetOrAdd(path, p => GetIconUnsafe(p, isDirectory));
 			
 			// Every other type of file can be cached by extension
 			return IconCacheByExtension.GetOrAdd(Path.GetExtension(path).ToLower(), _ => GetIconUnsafe(path, false));
@@ -74,7 +70,7 @@ namespace Winder.App.WindowsUtilities
 		}
 
 		private static readonly ConcurrentDictionary<string, ImageSource> IconCacheByExtension = new ConcurrentDictionary<string, ImageSource>();
-		private static readonly ConcurrentDictionary<string, ImageSource> IconCacheByFileSystemInfo = new ConcurrentDictionary<string, ImageSource>();
+		private static readonly ConcurrentDictionary<NormalizedPath, ImageSource> IconCacheByPath = new ConcurrentDictionary<NormalizedPath, ImageSource>();
 		
 		private enum IconSize
 		{
