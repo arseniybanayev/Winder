@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
-using Winder.App.WindowsUtilities;
 using Winder.Util;
 
 namespace Winder.App.ViewModels

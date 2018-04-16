@@ -1,9 +1,7 @@
-﻿using System;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using Winder.App.ViewModels;
 using Winder.App.WindowsUtilities;
-using Winder.Util;
 
 namespace Winder.App.Views
 {
