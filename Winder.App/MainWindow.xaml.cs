@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using Winder.App.Properties;
 using Winder.App.ViewModels;
 using Winder.App.Views;
@@ -93,9 +94,46 @@ namespace Winder.App
 			PushPane(selectedDirectory);
 		}
 		
-		private void ListBoxFavorites_OnDrop(object sender, DragEventArgs e) {
-			var path = (string)e.Data.GetData("Path");
-			FavoritesViewModel.Default.FavoriteDirectories.Add(FileSystemManager.GetDirectoryViewModel(path.ToNormalizedPath()));
+		private void ListBoxFavorites_Drop(object sender, DragEventArgs e) {
+			// Handling a drop of a file system item from a directory listing pane
+			if (e.Data.GetDataPresent("Path") && e.Data.GetDataPresent("IsDirectory")) {
+				DropFileSystemItemOntoFavorites(e.Data, e.GetPosition(ListBoxFavorites));
+			}
+		}
+
+		private void DropFileSystemItemOntoFavorites(IDataObject data, Point point) {
+			// We only want to handle directory drops (files can't be Favorites)
+			if (!(data.GetData("IsDirectory") is bool isDirectory) || !isDirectory)
+				return;
+
+			var path = (string)data.GetData("Path");
+			var directoryViewModel = FileSystemManager.GetDirectoryViewModel(path.ToNormalizedPath());
+
+			// Add to the end of the list if we can't determine where the directory was dropped
+			if (!(ListBoxFavorites.InputHitTest(point) is UIElement element)) {
+				FavoritesViewModel.Default.Add(directoryViewModel);
+				return;
+			}
+
+			// Get the ListBoxItem onto which the dragged directory was dropped
+			var prop = DependencyProperty.UnsetValue;
+			while (prop == DependencyProperty.UnsetValue) {
+				prop = ListBoxFavorites.ItemContainerGenerator.ItemFromContainer(element);
+				if (prop == DependencyProperty.UnsetValue)
+					element = VisualTreeHelper.GetParent(element) as UIElement;
+
+				// If we can't find the ListBoxItem along the visual tree, break and go to the 'else' block below
+				if (element == null || ReferenceEquals(element, ListBoxFavorites))
+					break;
+			}
+
+			// Found the ListBoxItem successfully, so add the dropped directory right above it
+			if (prop != DependencyProperty.UnsetValue && element is ListBoxItem listBoxItem) {
+				FavoritesViewModel.Default.Add(directoryViewModel, ListBoxFavorites.ItemContainerGenerator.IndexFromContainer(listBoxItem));
+			} else {
+				// Add to the end of the list if we can't find a ListBoxItem along the visual tree
+				FavoritesViewModel.Default.Add(directoryViewModel);
+			}
 		}
 
 		#endregion
@@ -296,16 +334,35 @@ namespace Winder.App
 
 		#region Directory Listing Drag/Drop
 
-		private void DirectoryListingPane_Item_MouseMove(object sender, MouseEventArgs e) {
-			if (e.LeftButton != MouseButtonState.Pressed)
+		private Point _startPoint;
+		private bool _isDragging;
+
+		private void DirectoryListingPane_Item_PreviewMouseLeftButtonDown(object sender, MouseEventArgs e) {
+			_startPoint = e.GetPosition(null);
+		}
+
+		private void DirectoryListingPane_Item_PreviewMouseMove(object sender, MouseEventArgs e) {
+			if (e.LeftButton != MouseButtonState.Pressed || _isDragging)
 				return;
 
-			var listBoxItem = (ListBoxItem)sender;
-			var selectedItem = (FileSystemItemViewModel)listBoxItem.Content;
+			var position = e.GetPosition(null);
+			if (Math.Abs(position.X - _startPoint.X) > SystemParameters.MinimumHorizontalDragDistance ||
+			    Math.Abs(position.Y - _startPoint.Y) > SystemParameters.MinimumVerticalDragDistance) {
+				BeginDrag((ListBoxItem)sender);
+			}
+		}
 
+		private void BeginDrag(ListBoxItem listBoxItem) {
+			_isDragging = true;
+
+			var selectedItem = (FileSystemItemViewModel)listBoxItem.Content;
 			var data = new DataObject();
 			data.SetData("Path", selectedItem.Path.ToString());
+			data.SetData("IsDirectory", selectedItem.IsDirectory);
+
 			DragDrop.DoDragDrop(listBoxItem, data, DragDropEffects.Copy);
+
+			_isDragging = false;
 		}
 
 		#endregion

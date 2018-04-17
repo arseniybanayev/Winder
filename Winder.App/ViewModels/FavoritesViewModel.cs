@@ -38,5 +38,12 @@ namespace Winder.App.ViewModels
 			Settings.Default.FavoritePaths = stringCollection;
 			Settings.Default.Save();
 		}
+
+		public void Add(DirectoryViewModel directoryViewModel, int atIndex = -1) {
+			if (atIndex == -1)
+				FavoriteDirectories.Add(directoryViewModel);
+			else
+				FavoriteDirectories.Insert(atIndex, directoryViewModel);
+		}
 	}
 }

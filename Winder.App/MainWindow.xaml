@@ -15,8 +15,9 @@
         <!-- Used for the list box item selection. Looks like Finder -->
         <!-- (Used in DirectoryListingPane via the main window's resources dictionary) -->
         <Style x:Key="DirectoryListingItemStyle" TargetType="{x:Type ListBoxItem}">
-			<EventSetter Event="PreviewMouseRightButtonDown" Handler="DirectoryListingPane_Item_PreviewMouseRightButtonDown" />
-            <EventSetter Event="MouseMove" Handler="DirectoryListingPane_Item_MouseMove" />
+            <EventSetter Event="PreviewMouseRightButtonDown" Handler="DirectoryListingPane_Item_PreviewMouseRightButtonDown" />
+            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DirectoryListingPane_Item_PreviewMouseLeftButtonDown" />
+            <EventSetter Event="PreviewMouseMove" Handler="DirectoryListingPane_Item_PreviewMouseMove" />
 			<Setter Property="FocusVisualStyle" Value="{x:Null}" />
 			<Setter Property="Background" Value="Transparent" />
 			<Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -126,7 +127,7 @@
                          SelectionChanged="ListBoxFavorites_SelectionChanged"
                          PreviewKeyDown="ListBoxFavorites_PreviewKeyDown"
                          AllowDrop="True"
-                         Drop="ListBoxFavorites_OnDrop">
+                         Drop="ListBoxFavorites_Drop">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="0,2">
