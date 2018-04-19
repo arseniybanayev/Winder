@@ -21,12 +21,11 @@ namespace Winder.App.Views
 			ViewModel = directory;
 			ItemsSource = ViewModel.Children;
 
-			// Template for items
+			// Template and style for items
 			var itemTemplate = XamlReader.Load(
 				new FileStream("Resources/DirectoryListingItemTemplate.xaml", FileMode.Open)
 				) as DataTemplate;
 			ItemTemplate = itemTemplate;
-
 			ItemContainerStyle = (Style)Application.Current.MainWindow?.Resources["DirectoryListingItemStyle"];
 		}
 
@@ -62,3 +61,4 @@ namespace Winder.App.Views
 		}
 	}
 }
+ 

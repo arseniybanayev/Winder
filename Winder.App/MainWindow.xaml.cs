@@ -36,6 +36,7 @@ namespace Winder.App
 
 			// Open the opening directory
 			PushPane(FileSystemManager.GetDirectoryViewModel(Settings.Default.NewWindowPath.ToNormalizedPath()));
+			UpdateTitleAndStatus();
 		}
 
 		private void SetTitle(string title) {
@@ -92,6 +93,7 @@ namespace Winder.App
 			favorites.SelectedIndex = -1; // Make it seem like you can't select in Favorites
 			PopPanesUntil(-1);
 			PushPane(selectedDirectory);
+			UpdateTitleAndStatus();
 		}
 		
 		private void ListBoxFavorites_Drop(object sender, DragEventArgs e) {

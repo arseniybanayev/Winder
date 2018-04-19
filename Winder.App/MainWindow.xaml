@@ -14,11 +14,8 @@
 	<Window.Resources>
         <!-- Used for the list box item selection. Looks like Finder -->
         <!-- (Used in DirectoryListingPane via the main window's resources dictionary) -->
-        <Style x:Key="DirectoryListingItemStyle" TargetType="{x:Type ListBoxItem}">
-            <EventSetter Event="PreviewMouseRightButtonDown" Handler="DirectoryListingPane_Item_PreviewMouseRightButtonDown" />
-            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DirectoryListingPane_Item_PreviewMouseLeftButtonDown" />
-            <EventSetter Event="PreviewMouseMove" Handler="DirectoryListingPane_Item_PreviewMouseMove" />
-			<Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Style x:Key="NoDottedBorderStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
 			<Setter Property="Background" Value="Transparent" />
 			<Setter Property="HorizontalContentAlignment" Value="Stretch" />
 			<Setter Property="Padding" Value="2,0,0,0" />
@@ -48,6 +45,11 @@
 					</ControlTemplate>
 				</Setter.Value>
 			</Setter>
+		</Style>
+		<Style x:Key="DirectoryListingItemStyle" BasedOn="{StaticResource NoDottedBorderStyle}" TargetType="{x:Type ListBoxItem}">
+			<EventSetter Event="PreviewMouseRightButtonDown" Handler="DirectoryListingPane_Item_PreviewMouseRightButtonDown" />
+			<EventSetter Event="PreviewMouseLeftButtonDown" Handler="DirectoryListingPane_Item_PreviewMouseLeftButtonDown" />
+			<EventSetter Event="PreviewMouseMove" Handler="DirectoryListingPane_Item_PreviewMouseMove" />
 		</Style>
 	</Window.Resources>
 	<Window.Style>
@@ -110,13 +112,13 @@
             </DockPanel>
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="160" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 
                 <!--Favorites-->
-                <ListBox Name="ListBoxFavorites"
+				<ListBox Name="ListBoxFavorites"
                          Grid.Column="0"
                          SelectionMode="Single"
                          HorizontalAlignment="Stretch"
@@ -127,8 +129,9 @@
                          SelectionChanged="ListBoxFavorites_SelectionChanged"
                          PreviewKeyDown="ListBoxFavorites_PreviewKeyDown"
                          AllowDrop="True"
-                         Drop="ListBoxFavorites_Drop">
-                    <ListBox.ItemTemplate>
+                         Drop="ListBoxFavorites_Drop"
+						 ItemContainerStyle="{StaticResource NoDottedBorderStyle}">
+					<ListBox.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="0,2">
                                 <Grid.ColumnDefinitions>
