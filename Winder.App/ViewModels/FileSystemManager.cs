@@ -1,44 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using Winder.App.Properties;
 using Winder.Util;
 
 namespace Winder.App.ViewModels
 {
 	public static class FileSystemManager
 	{
-		public static DirectoryViewModel GetDirectoryViewModel(NormalizedPath path) {
-			lock (CachedDirectories) {
-				if (_watcher == null)
-					StartWatcher(path);
-				return CachedDirectories.GetOrAdd(path, p => {
-					var directory = new DirectoryViewModel(p);
-					directory.UpdateCollection(collection => {
-						foreach (var c in GetVisibleChildren(directory))
-							collection.Add(c);
-					});
-					return directory;
-				});
-			}
-		}
-
-		private static IEnumerable<FileSystemItemViewModel> GetVisibleChildren(DirectoryViewModel directory) {
-			try {
-				var children = directory.Info.GetFileSystemInfos();
-				var childrenToShow = Settings.Default.ShowHiddenFiles
-					? children
-					: children.Where(i => !i.IsReallyHidden());
-				return childrenToShow.Select(c => c is FileInfo
-					? new FileViewModel(c.FullName.ToNormalizedPath()) as FileSystemItemViewModel
-					: new DirectoryViewModel(c.FullName.ToNormalizedPath()));
-			} catch (UnauthorizedAccessException) {
-				Log.Error($"Unauthorized access to {directory.Path}");
-				return Enumerable.Empty<FileSystemItemViewModel>();
-			}
-		}
-
 		private static FileSystemWatcher _watcher;
 		private static readonly Dictionary<NormalizedPath, DirectoryViewModel> CachedDirectories = new Dictionary<NormalizedPath, DirectoryViewModel>();
 
