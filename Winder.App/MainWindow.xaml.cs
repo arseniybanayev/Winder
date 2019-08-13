@@ -39,11 +39,12 @@ namespace Winder.App
 			UpdateTitleAndStatus();
 		}
 
-		private void SetTitle(string title) {
-			var newTitle = string.IsNullOrWhiteSpace(title)
+		private void SetTitle(DirectoryViewModel directory) {
+			var newTitle = string.IsNullOrWhiteSpace(directory.DisplayName)
 				? "Winder"
-				: title;
+				: directory.DisplayName;
 			TextBlockTitle.Text = newTitle;
+			ImageTitle.Source = directory.Icon;
 		}
 
 		private void SetStatus(string status) {
@@ -54,7 +55,7 @@ namespace Winder.App
 		private void UpdateTitleAndStatus() {
 			var directoryListing = _panes.OfType<DirectoryListingPane>().Last(); // At least the root will always be there
 
-			SetTitle(directoryListing.ViewModel.DisplayName);
+			SetTitle(directoryListing.ViewModel);
 
 			var selectedCount = directoryListing.SelectedItems.Count;
 			var availableFreeSpace = directoryListing.ViewModel.Info.GetDriveInfo().AvailableFreeSpace;

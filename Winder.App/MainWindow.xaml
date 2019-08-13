@@ -61,14 +61,18 @@
 	</Window.Style>
 	<Border BorderBrush="Black" BorderThickness="1" CornerRadius="10" Background="#F6F6F6">
         <DockPanel Name="DockMain" Focusable="False" Margin="3,5,0,0">
-            <!-- Background="Transparent" creates a clickable area on the DockPanel,
-			 otherwise the MouseDown event "falls through" -->
-            <DockPanel Name="TitleBar"
+			
+			<!--Title bar at the top-->
+			<DockPanel Name="TitleBar"
 					   DockPanel.Dock="Top"
 					   Height="25"
 					   Background="Transparent"
 					   MouseDown="TitleBar_MouseDown">
-                <Button x:Name="CloseButton"
+				<!--Background="Transparent" creates a clickable area on the DockPanel,
+				otherwise the MouseDown event "falls through"-->
+				
+				<!--Window buttons at the top-left-->
+				<Button x:Name="CloseButton"
 						DockPanel.Dock="Left"
 						BorderThickness="0"
 						Margin="8,3,4,3"
@@ -95,11 +99,26 @@
 						Click="MaximizeButton_Click">
                     <Image Source="{StaticResource WindowMaximizeIcon}" Width="14" Height="14" />
                 </Button>
-                <TextBlock Name="TextBlockTitle"
-						   Text="Winder"
-						   Height="20"
-						   HorizontalAlignment="Center" />
-            </DockPanel>
+				
+				<!--Title and Icon, in the center-->
+				<Grid HorizontalAlignment="Center" Height="20">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="24" />
+						<ColumnDefinition Width="Auto" />
+					</Grid.ColumnDefinitions>
+					<Image Name="ImageTitle"
+						   Width="20"
+						   Grid.Column="0"
+						   HorizontalAlignment="Left"
+						   VerticalAlignment="Center" />
+					<TextBlock Name="TextBlockTitle"
+							   Text="Winder"
+							   Grid.Column="1"
+							   VerticalAlignment="Center" />
+				</Grid>
+			</DockPanel>
+			
+			<!--Status bar at the bottom-->
             <DockPanel Name="StatusBar"
 					   DockPanel.Dock="Bottom"
 					   Height="25"
