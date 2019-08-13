@@ -25,7 +25,7 @@ namespace Winder.App.ViewModels
 
 		private FavoritesViewModel(IEnumerable<NormalizedPath> directories) {
 			_favoriteDirectories = new Lazy<ObservableCollection<DirectoryViewModel>>(() => {
-				var viewModels = directories.Select(d => new DirectoryViewModel(d));
+				var viewModels = directories.Select(DirectoryViewModel.Get);
 				var collection = new ObservableCollection<DirectoryViewModel>(viewModels);
 				collection.CollectionChanged += OnCollectionChanged;
 				return collection;

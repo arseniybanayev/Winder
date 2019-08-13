@@ -35,7 +35,7 @@ namespace Winder.App
 			}
 
 			// Show the opening directory
-			PushPane(new DirectoryViewModel(Settings.Default.NewWindowPath.ToNormalizedPath()));
+			PushPane(DirectoryViewModel.Get(Settings.Default.NewWindowPath.ToNormalizedPath()));
 			UpdateTitleAndStatus();
 		}
 
@@ -109,7 +109,7 @@ namespace Winder.App
 				return;
 
 			var path = (string)data.GetData("Path");
-			var directoryViewModel = new DirectoryViewModel(path.ToNormalizedPath());
+			var directoryViewModel = DirectoryViewModel.Get(path.ToNormalizedPath());
 
 			// Add to the end of the list if we can't determine where the directory was dropped
 			if (!(ListBoxFavorites.InputHitTest(point) is UIElement element)) {

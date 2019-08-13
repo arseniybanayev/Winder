@@ -13,14 +13,6 @@ namespace Winder.App.ViewModels
 			Info = new FileInfo(path);
 		}
 
-		/// <summary>
-		/// Should be called by <see cref="FileSystemManager"/> to update the known <see cref="FileInfo"/>
-		/// and notify any watchers that properties derived from the new info might have changed.
-		/// </summary>
-		public void UpdateInfo(FileInfo newInfo) {
-			Info = newInfo;
-		}
-
 		public FileInfo Info { get; private set; }
 		public override FileSystemInfo FileSystemInfo => Info;
 
