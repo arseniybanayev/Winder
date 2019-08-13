@@ -19,6 +19,8 @@ namespace Winder.App.ViewModels
 		public bool IsDirectory => FileSystemInfo is DirectoryInfo;
 
 		public Visibility VisibleIfDirectory => IsDirectory ? Visibility.Visible : Visibility.Hidden;
+
+		// TODO: Finder puts ellipsis in the middle of the name, not at the end
 		public abstract string DisplayName { get; }
 
 		public void Open() {
