@@ -159,6 +159,30 @@ namespace Winder.App
 					directoryPane.SelectionChanged += DirectoryListingPane_SelectionChanged;
 
 					pane = directoryPane;
+
+					// Add a breadcrumb
+					if (_panes.Count > 0) {
+						StackPanelBreadcrumbs.Children.Add(new TextBlock {
+							Text = ">",
+							Height = 18,
+							VerticalAlignment = VerticalAlignment.Center,
+							Margin = new Thickness(4, 0, 4, 0)
+						});
+					}
+					var breadcrumbIcon = new Image {
+						Source = directory.Icon,
+						Width = 18, Height = 18, // Smaller than the icons in the title bar and directory listings
+						VerticalAlignment = VerticalAlignment.Center
+					};
+					StackPanelBreadcrumbs.Children.Add(breadcrumbIcon);
+					var breadcrumbTextBlock = new TextBlock {
+						Text = directory.DisplayName, // TODO: Use same ellipsis as in directory listing item
+						Height = 18,
+						Margin = new Thickness(4, 0, 0, 0),
+						VerticalAlignment = VerticalAlignment.Center
+					};
+					StackPanelBreadcrumbs.Children.Add(breadcrumbTextBlock);
+					
 					break;
 				case FileViewModel file:
 					// Open file preview pane
@@ -195,6 +219,13 @@ namespace Winder.App
 					directoryPane.PreviewKeyDown -= DirectoryListingPane_PreviewKeyDown;
 					directoryPane.KeyDown -= DirectoryListingPane_KeyDown;
 					directoryPane.SelectionChanged -= DirectoryListingPane_SelectionChanged;
+
+					// Remove a breadcrumb
+					if (_panes.Count > 1)
+						StackPanelBreadcrumbs.Children.RemoveAt(StackPanelBreadcrumbs.Children.Count - 1);
+					StackPanelBreadcrumbs.Children.RemoveAt(StackPanelBreadcrumbs.Children.Count - 1);
+					StackPanelBreadcrumbs.Children.RemoveAt(StackPanelBreadcrumbs.Children.Count - 1);
+
 					break;
 				case FileInfoPane _:
 					break;
