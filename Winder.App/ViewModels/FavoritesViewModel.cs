@@ -8,6 +8,7 @@ using Winder.Util;
 
 namespace Winder.App.ViewModels
 {
+	// TODO: Finder splits the Favorites section into Favorites, iCloud, Locations, Tags, etc.
 	public class FavoritesViewModel
 	{
 		private static readonly Lazy<FavoritesViewModel> DefaultLazy = new Lazy<FavoritesViewModel>(() => {
