@@ -129,6 +129,8 @@
 						   Height="20"
 						   HorizontalAlignment="Center" />
             </DockPanel>
+			
+			<!--Grid in the center-->
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="160" />
@@ -164,21 +166,32 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
                 
-                <!-- Grid splitter between Favorites and columns-->
+                <!--Grid splitter between Favorites and columns-->
                 <GridSplitter Grid.Column="1"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Stretch"
                           ShowsPreview="True"
                           Width="3" />
                 
-                <!-- Main grid (horizontally scrollable) -->
-                <ScrollViewer Name="ScrollViewerMain"
-                              Grid.Column="2"
-                              VerticalScrollBarVisibility="Disabled"
-                              HorizontalScrollBarVisibility="Visible">
-                    <Grid Name="GridMain" />
-                </ScrollViewer>
-            </Grid>
+                <!--Main window: file system grid and breadcrumbs-->
+				<Grid Grid.Column="2">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="*" />
+						<RowDefinition Height="30" />
+					</Grid.RowDefinitions>
+
+					<!--File system grid, horizontally scrollable-->
+					<ScrollViewer Name="ScrollViewerMain"
+								  Grid.Row="0"
+								  VerticalScrollBarVisibility="Disabled"
+								  HorizontalScrollBarVisibility="Auto">
+						<Grid Name="GridMain" />
+					</ScrollViewer>
+
+					<!--Breadcrumbs-->
+					<StackPanel Name="StackPanelBreadcrumbs" Grid.Row="1" />
+				</Grid>
+			</Grid>
         </DockPanel>
     </Border>
 </Window>
