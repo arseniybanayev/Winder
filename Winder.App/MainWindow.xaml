@@ -171,7 +171,7 @@
                           HorizontalAlignment="Center"
                           VerticalAlignment="Stretch"
                           ShowsPreview="True"
-                          Width="3" />
+                          Width="1" />
                 
                 <!--Main window: file system grid and breadcrumbs-->
 				<Grid Grid.Column="2">
