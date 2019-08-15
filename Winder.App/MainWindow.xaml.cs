@@ -279,14 +279,18 @@ namespace Winder.App
 		}
 
 		private void DirectoryListingPane_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			var latestSelection = GetLatestSelectedFiles((DirectoryListingPane)sender);
+			var directoryListingPane = (DirectoryListingPane)sender;
+			var latestSelection = GetLatestSelectedFiles(directoryListingPane);
 
 			// Remove panes to the right of the pane containing the latest selection
 			PopPanesUntil(latestSelection.Item1);
 
-			// Show a new pane for the selected item, if there is one
-			if (latestSelection.Item2.Count == 1)
+			if (latestSelection.Item2.Count > 1) {
+				// TODO: Show a new pane with summary information if there is more than one item selected
+			} else if (latestSelection.Item2.Count == 1) {
+				// Show a new pane for the selected item
 				PushPane(latestSelection.Item2.Single());
+			}
 
 			UpdateTitleAndStatus();
 		}
@@ -478,6 +482,10 @@ namespace Winder.App
 					OnRightKeyDown(pane);
 					e.Handled = true;
 					break;
+				case Key.Down:
+					if (OnDownKeyDown(pane))
+						e.Handled = true;
+					break;
 			}
 		}
 		
@@ -494,7 +502,20 @@ namespace Winder.App
 				case Key.Right:
 					OnRightKeyDown(pane);
 					break;
+				case Key.Down:
+					OnDownKeyDown(pane);
+					break;
 			}
+		}
+		
+		private bool OnDownKeyDown(DirectoryListingPane pane) {
+			if (pane.SelectedItem == null) {
+				// If nothing is selected, then select the first item
+				pane.SelectItemAndFocus(0);
+				return true;
+			}
+
+			return false;
 		}
 
 		private void OnLeftKeyDown(DirectoryListingPane pane) {
@@ -519,12 +540,15 @@ namespace Winder.App
 				// and focus on the newly selected item
 				if (pane.SelectedIndex < pane.Items.Count - 1)
 					pane.SelectItemAndFocus(pane.SelectedIndex + 1);
-			} else {
+			} else if (pane.SelectedItem is DirectoryViewModel) {
 				// Go into the next pane, which is guaranteed to be open
-				// bc the selected file system item in this pane is a directory
+				// bc the selected file system item in this pane is itself a directory
 				var nextPane = (DirectoryListingPane)_panes[_panes.IndexOf(pane) + 1];
 				if (nextPane.Items.Count > 0)
 					nextPane.SelectItemAndFocus(0);
+			} else if (pane.SelectedItem == null) {
+				// If nothing is selected, then select the first item
+				pane.SelectItemAndFocus(0);
 			}
 		}
 

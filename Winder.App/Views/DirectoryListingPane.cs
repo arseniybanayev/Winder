@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
@@ -38,6 +39,10 @@ namespace Winder.App.Views
 			FocusSelectedItem();
 		}
 
+		internal void FocusItemAt(int index) {
+			((ListBoxItem)ItemContainerGenerator.ContainerFromIndex(index)).Focus();
+		}
+
 		/// <summary>
 		/// Focuses the first selected item if multiple are selected.
 		/// Does nothing if no item is selected
@@ -49,7 +54,7 @@ namespace Winder.App.Views
 		}
 		
 		/// <summary>
-		/// Returns whether the first selected item is focused if multiple are selected.
+		/// Returns whether the first selected item is focused if at least one is selected.
 		/// Returns false if no item is selected.
 		/// </summary>
 		internal bool SelectedItemIsFocused {
@@ -61,4 +66,3 @@ namespace Winder.App.Views
 		}
 	}
 }
- 
