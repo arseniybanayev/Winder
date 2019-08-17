@@ -6,7 +6,7 @@ After switching to Windows I realized I missed the broad perspective that Finder
 
 ## Status
 
-Current (as of 4/12/2018):
+Current (as of 8/17/2019):
 <br><img src="./screenshot.PNG" width="600" />
 
 Desired:
