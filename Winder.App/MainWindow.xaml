@@ -54,10 +54,17 @@
 		</Style>
 	</Window.Resources>
 	<Window.Style>
-		<!-- These are the font family and size traditionally used in Finder -->
 		<Style TargetType="{x:Type Window}">
+			<!-- These are the font family and size traditionally used in Finder -->
 			<Setter Property="FontFamily" Value="Helvetica" />
 			<Setter Property="FontSize" Value="13" />
+			
+			<!-- "WindowChrome" implements resizing by grabbing the window edges (https://stackoverflow.com/a/20497966) -->
+			<Setter Property="WindowChrome.WindowChrome">
+				<Setter.Value>
+					<WindowChrome CornerRadius="0" GlassFrameThickness="1" UseAeroCaptionButtons="False"/>
+				</Setter.Value>
+			</Setter>
 		</Style>
 	</Window.Style>
 	<Border BorderBrush="Black"
