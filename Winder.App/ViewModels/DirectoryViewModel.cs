@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Windows.Media;
 using Winder.App.Properties;
 using Winder.App.WindowsUtilities;

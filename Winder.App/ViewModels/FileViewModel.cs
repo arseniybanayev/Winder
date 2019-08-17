@@ -26,7 +26,7 @@ namespace Winder.App.ViewModels
 			}
 		}
 
-		public string FileSize {
+		public string FileSizeString {
 			get {
 				var byteCount = Info.Length;
 				return byteCount.ToByteSuffixString();
